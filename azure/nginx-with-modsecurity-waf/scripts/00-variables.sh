@@ -1,12 +1,12 @@
 # Azure Subscription and Tenant
-RESOURCE_GROUP_NAME="AnubisRG"
+RESOURCE_GROUP_NAME="<your-resource-group-name>"
 SUBSCRIPTION_ID=$(az account show --query id --output tsv)
 SUBSCRIPTION_NAME=$(az account show --query name --output tsv)
 TENANT_ID=$(az account show --query tenantId --output tsv)
 DNS_ZONE_NAME="<your-azure-dns-name-eg-contoso-com>"
 DNS_ZONE_RESOURCE_GROUP_NAME="<your-azure-dns-resource-group-name>"
 DNS_ZONE_SUBSCRIPTION_ID='<your-azure-dns-subscription-id>'
-SUBDOMAIN="amunyelb"
+SUBDOMAIN="<your-yelb-application-subdomain>"
 URL="https://$SUBDOMAIN.$DNS_ZONE_NAME"
 
 # NGINX Ingress Controller installed via Helm
