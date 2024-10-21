@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: yelb.app
+  namespace: yelb
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "360"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "360"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "360"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - yelb.contoso.com
+    secretName: yelb-tls-secret
+  rules:
+  - host: yelb.contoso.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: yelb-ui
+            port:
+              number: 80

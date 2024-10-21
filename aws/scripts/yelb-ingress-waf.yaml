@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: yelb.app
+  namespace: yelb
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/wafv2-acl-arn: arn:aws:wafv2:us-east-2:941377123301:regional/webacl/WAF-FOR-YELB/80221b19-dead-49a4-89e1-b07e70b2c0dc
+spec:
+  ingressClassName: alb 
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: yelb-ui
+            port:
+              number: 80

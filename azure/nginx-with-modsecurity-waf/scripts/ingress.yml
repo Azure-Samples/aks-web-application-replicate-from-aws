@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: yelb.app
+  namespace: yelb
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-nginx
+    cert-manager.io/acme-challenge-type: http01 
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - yelb.<your-azure-dns-name-eg-contoso-com>
+    secretName: yelb-tls-secret
+  rules:
+  - host: yelb.<your-azure-dns-name-eg-contoso-com>
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: yelb-ui
+            port:
+              number: 80
