@@ -1,0 +1,23 @@
+The count mode in AWS WAF refers to a feature that allows you to track the number of requests that match a particular rule or rule group, without taking any action. When count mode is enabled for a rule or rule group, AWS WAF will increment a counter each time a request matches the specified conditions, but it will not take any blocking or filtering action.
+
+This feature is useful for monitoring and gathering insights about traffic patterns and potential threats without actually blocking or allowing any requests. It can help you understand the types of requests that are being made to your applications and identify potential security vulnerabilities or attack patterns.
+
+By utilizing count mode in AWS WAF, you can gather data and use it to fine-tune your rules and policies, making more informed decisions about how to handle different types of requests. It provides a high-level view of the traffic patterns and helps you prioritize the rules that need immediate attention.
+
+Overall, count mode in AWS WAF is a valuable tool for monitoring and collecting data on request patterns, which can be utilized for improving the security and performance of your applications.
+
+In AWS WAF, labels are used to customize how Bot Control detects and handles requests from different types of bots. Bot Control is a feature that helps protect your applications from automated attacks, such as those carried out by malicious bots.
+
+By assigning labels to different types of bots, you can define specific rules and actions to be taken for each bot category. This allows you to have granular control over how Bot Control handles requests from different bots based on their behavior, intentions, or characteristics.
+
+Here's how it works:
+
+1. Define Labels: You can create custom labels in AWS WAF to categorize different types of bots. For example, you can create labels like "GoodBot," "BadBot," or "WebScraper" to differentiate between legitimate bots, malicious bots, or web scraping bots.
+
+2. Configure Bot Control Rules: After defining labels, you can associate them with rules in the Bot Control settings. Each rule can have one or more labels assigned to it. These rules define how requests from bots with specific labels should be treated.
+
+3. Specify Actions: For each rule, you can specify different actions to be taken when requests from bots with matching labels are encountered. Actions can include allowing, blocking, redirecting, or logging requests. You can also configure custom responses to be sent back to the bots based on their labels.
+
+4. Fine-Tune Bot Control Settings: By analyzing the data and monitoring the behavior of different bots, you can continuously fine-tune your Bot Control settings. You can update the labels, rules, and actions to improve the accuracy and effectiveness of bot detection and mitigation.
+
+By leveraging labels in AWS WAF Bot Control, you can customize the bot management rules based on your specific requirements. It enables you to have better control, security, and flexibility in dealing with different types of bots, protecting your applications from various automated threats.

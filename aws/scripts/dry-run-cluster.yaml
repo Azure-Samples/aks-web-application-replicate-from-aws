@@ -1,0 +1,75 @@
+apiVersion: eksctl.io/v1alpha5
+availabilityZones:
+- us-east-2a
+- us-east-2b
+- us-east-2c
+cloudWatch:
+  clusterLogging: {}
+iam:
+  vpcResourceControllerPolicy: true
+  withOIDC: true
+kind: ClusterConfig
+kubernetesNetworkConfig:
+  ipFamily: IPv4
+managedNodeGroups:
+- amiFamily: AmazonLinux2
+  desiredCapacity: 3
+  disableIMDSv1: true
+  disablePodIMDS: false
+  iam:
+    withAddonPolicies:
+      albIngress: false
+      appMesh: false
+      appMeshPreview: false
+      autoScaler: true
+      awsLoadBalancerController: true
+      certManager: false
+      cloudWatch: false
+      ebs: false
+      efs: false
+      externalDNS: false
+      fsx: false
+      imageBuilder: false
+      xRay: false
+  instanceSelector: {}
+  instanceType: t3.medium
+  labels:
+    alpha.eksctl.io/cluster-name: waf-eks-sample
+    alpha.eksctl.io/nodegroup-name: default
+    env: dev
+  maxSize: 5
+  minSize: 3
+  name: default
+  privateNetworking: false
+  releaseVersion: ""
+  securityGroups:
+    withLocal: null
+    withShared: null
+  ssh:
+    allow: true
+    publicKeyPath: ~/.ssh/id_rsa.pub
+  tags:
+    alpha.eksctl.io/nodegroup-name: default
+    alpha.eksctl.io/nodegroup-type: managed
+  volumeIOPS: 3000
+  volumeSize: 80
+  volumeThroughput: 125
+  volumeType: gp3
+metadata:
+  name: waf-eks-sample
+  region: us-east-2
+  tags:
+    env: dev
+  version: "1.30"
+privateCluster:
+  enabled: false
+  skipEndpointCreation: false
+vpc:
+  autoAllocateIPv6: false
+  cidr: 192.168.0.0/16
+  clusterEndpoints:
+    privateAccess: false
+    publicAccess: true
+  manageSharedNodeSecurityGroupRules: true
+  nat:
+    gateway: Single
