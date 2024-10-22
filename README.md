@@ -1,3 +1,34 @@
+---
+page_type: sample
+languages:
+- azurecli
+- bicep
+- csharp
+- yaml
+- json
+products:
+- azure
+- azure-front-door
+- azure-resource-manager
+- azure-application-gateway
+- azure-kubernetes-service
+- azure-container-registry
+- azure-storage
+- azure-blob-storage
+- azure-storage-accounts
+- azure-bastion
+- azure-private-link
+- azure-virtual-network
+- azure-key-vault
+- azure-monitor
+- azure-log-analytics
+- azure-virtual-machines
+name:  Porting a Web Application from AWS Elastic Kubernetes Service (EKS) to Azure Kubernetes Service (AKS)
+description: This sample shows how to migrate a web application from Amazon Elastic Kubernetes Service (EKS) to Azure Kubernetes Service (AKS).
+urlFragment: aks-web-application-replicate-from-aws
+azureDeploy: "https://raw.githubusercontent.com/Azure-Samples/aks-web-application-replicate-from-aws/main/azure/nginx-with-azure-waf/bicep/azuredeploy.json"
+---
+
 # Porting a Web Application from AWS Elastic Kubernetes Service (EKS) to Azure Kubernetes Service (AKS)
 
 In this sample, you learn how to migrate a web application from [Amazon Elastic Kubernetes Service (EKS)](https://docs.aws.amazon.com/en_us/eks/latest/userguide/what-is-eks.html) to [Azure Kubernetes Service (AKS)](https://docs.microsoft.com/en-us/azure/aks/intro-kubernetes).

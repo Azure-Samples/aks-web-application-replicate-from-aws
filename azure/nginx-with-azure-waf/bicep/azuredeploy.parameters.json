@@ -1,0 +1,336 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "aksClusterNetworkMode": {
+      "value": "transparent"
+    },
+    "aksClusterNetworkDataplane": {
+      "value": "cilium"
+    },
+    "aksClusterNetworkPlugin": {
+      "value": "azure"
+    },
+    "aksClusterNetworkPluginMode": {
+      "value": "overlay"
+    },
+    "aksClusterNetworkPolicy": {
+      "value": "cilium"
+    },
+    "aksClusterWebAppRoutingEnabled": {
+      "value": true
+    },
+    "aksClusterSkuTier": {
+      "value": "Standard"
+    },
+    "aksClusterPodCidr": {
+      "value": "192.168.0.0/16"
+    },
+    "aksClusterServiceCidr": {
+      "value": "172.16.0.0/16"
+    },
+    "aksClusterDnsServiceIP": {
+      "value": "172.16.0.10"
+    },
+    "aksClusterOutboundType": {
+      "value": "userAssignedNATGateway"
+    },
+    "aksClusterKubernetesVersion": {
+      "value": "1.30.4"
+    },
+    "aksClusterAdminUsername": {
+      "value": "azadmin"
+    },
+    "aksClusterSshPublicKey": {
+      "value": "<ssh-public-key>"
+    },
+    "loadBalancerBackendPoolType": {
+      "value": "nodeIP"
+    },
+    "aadProfileManaged": {
+      "value": true
+    },
+    "aadProfileEnableAzureRBAC": {
+      "value": true
+    },
+    "aadProfileAdminGroupObjectIDs": {
+      "value": [
+        "<entra-id-admin-group-object-id>"
+      ]
+    },
+    "systemAgentPoolName": {
+      "value": "system"
+    },
+    "systemAgentPoolVmSize": {
+      "value": "Standard_F8s_v2"
+    },
+    "systemAgentPoolOsDiskSizeGB": {
+      "value": 80
+    },
+    "systemAgentPoolAgentCount": {
+      "value": 3
+    },
+    "systemAgentPoolMaxCount": {
+      "value": 5
+    },
+    "systemAgentPoolMinCount": {
+      "value": 3
+    },
+    "systemAgentPoolNodeTaints": {
+      "value": [
+        "CriticalAddonsOnly=true:NoSchedule"
+      ]
+    },
+    "userAgentPoolName": {
+      "value": "user"
+    },
+    "userAgentPoolVmSize": {
+      "value": "Standard_F8s_v2"
+    },
+    "userAgentPoolOsDiskSizeGB": {
+      "value": 80
+    },
+    "userAgentPoolAgentCount": {
+      "value": 3
+    },
+    "userAgentPoolMaxCount": {
+      "value": 5
+    },
+    "userAgentPoolMinCount": {
+      "value": 3
+    },
+    "enableVnetIntegration": {
+      "value": true
+    },
+    "virtualNetworkAddressPrefixes": {
+      "value": "10.0.0.0/8"
+    },
+    "systemAgentPoolSubnetName": {
+      "value": "SystemSubnet"
+    },
+    "systemAgentPoolSubnetAddressPrefix": {
+      "value": "10.240.0.0/16"
+    },
+    "userAgentPoolSubnetName": {
+      "value": "UserSubnet"
+    },
+    "userAgentPoolSubnetAddressPrefix": {
+      "value": "10.241.0.0/16"
+    },
+    "podSubnetName": {
+      "value": "PodSubnet"
+    },
+    "podSubnetAddressPrefix": {
+      "value": "10.242.0.0/16"
+    },
+    "apiServerSubnetName": {
+      "value": "ApiServerSubnet"
+    },
+    "apiServerSubnetAddressPrefix": {
+      "value": "10.243.0.0/27"
+    },
+    "vmSubnetName": {
+      "value": "VmSubnet"
+    },
+    "vmSubnetAddressPrefix": {
+      "value": "10.243.1.0/24"
+    },
+    "bastionSubnetAddressPrefix": {
+      "value": "10.243.2.0/24"
+    },
+    "logAnalyticsSku": {
+      "value": "PerGB2018"
+    },
+    "logAnalyticsRetentionInDays": {
+      "value": 60
+    },
+    "vmEnabled": {
+      "value": true
+    },
+    "vmName": {
+      "value": "TestVm"
+    },
+    "vmSize": {
+      "value": "Standard_F8s_v2"
+    },
+    "imagePublisher": {
+      "value": "Canonical"
+    },
+    "imageOffer": {
+      "value": "0001-com-ubuntu-server-jammy"
+    },
+    "imageSku": {
+      "value": "22_04-lts-gen2"
+    },
+    "authenticationType": {
+      "value": "sshPublicKey"
+    },
+    "vmAdminUsername": {
+      "value": "azadmin"
+    },
+    "vmAdminPasswordOrKey": {
+      "value": "<ssh-public-key>"
+    },
+    "diskStorageAccountType": {
+      "value": "Premium_LRS"
+    },
+    "numDataDisks": {
+      "value": 1
+    },
+    "osDiskSize": {
+      "value": 50
+    },
+    "dataDiskSize": {
+      "value": 50
+    },
+    "dataDiskCaching": {
+      "value": "ReadWrite"
+    },
+    "aksClusterEnablePrivateCluster": {
+      "value": false
+    },
+    "aksEnablePrivateClusterPublicFQDN": {
+      "value": false
+    },
+    "podIdentityProfileEnabled": {
+      "value": false
+    },
+    "kedaEnabled": {
+      "value": true
+    },
+    "daprEnabled": {
+      "value": true
+    },
+    "fluxGitOpsEnabled": {
+      "value": false
+    },
+    "verticalPodAutoscalerEnabled": {
+      "value": true
+    },
+    "deploymentScriptUri": {
+      "value": "https://raw.githubusercontent.com/paolosalvatori/scripts/refs/heads/main/install-internal-nginx-ingress-controller.sh"
+    },
+    "blobCSIDriverEnabled": {
+      "value": true
+    },
+    "diskCSIDriverEnabled": {
+      "value": true
+    },
+    "fileCSIDriverEnabled": {
+      "value": true
+    },
+    "snapshotControllerEnabled": {
+      "value": true
+    },
+    "defenderSecurityMonitoringEnabled": {
+      "value": true
+    },
+    "imageCleanerEnabled": {
+      "value": true
+    },
+    "imageCleanerIntervalHours": {
+      "value": 24
+    },
+    "nodeRestrictionEnabled": {
+      "value": true
+    },
+    "workloadIdentityEnabled": {
+      "value": true
+    },
+    "oidcIssuerProfileEnabled": {
+      "value": true
+    },
+    "dnsZoneName": {
+      "value": "<your-azure-dns-name-eg-contoso-com>"
+    },
+    "dnsZoneResourceGroupName": {
+      "value": "<your-azure-dns-resource-group-name>"
+    },
+    "actionGroupEmailAddress": {
+      "value": "<your-email-adddress>"
+    },
+    "keyVaultName": {
+      "value": "<key-vault-name>"
+    },
+    "keyVaultResourceGroupName": {
+      "value": "<key-vault-resource-group-name>"
+    },
+    "keyVaultCertificateName": {
+      "value": "<key-vault-certificate-name>"
+    },
+    "backendAddressPoolName": {
+      "value": "DefaultBackendAddressPool"
+    },
+    "frontendPorts": {
+      "value": [
+        {
+          "name": "HttpFrontendPort",
+          "port": 443
+        }
+      ]
+    },
+    "httpListeners": {
+      "value": [
+        {
+          "name": "DefaultHttpListener",
+          "protocol": "Https",
+          "frontendPort": "HttpFrontendPort",
+          "sslCertificate": "<key-vault-certificate-name>",
+          "hostNames": [
+            "your-yelb-hostname"
+          ],
+          "firewallPolicy": "Enabled"
+        }
+      ]
+    },
+    "requestRoutingRules": {
+      "value": [
+        {
+          "name": "DefaultRequestRoutingRule",
+          "ruleType": "Basic",
+          "priority": 1000,
+          "listener": "DefaultHttpListener",
+          "backendPool": "DefaultBackendAddressPool",
+          "backendHttpSettings": "DefaultBackendHttpSettings"
+        }
+      ]
+    },
+    "backendHttpSettings": {
+      "value": [
+        {
+          "name": "DefaultBackendHttpSettings",
+          "port": 443,
+          "protocol": "Https",
+          "cookieBasedAffinity": "Disabled",
+          "probeName": "DefaultProbe",
+          "probeEnabled": true,
+          "pickHostNameFromBackendAddress": false,
+          "requestTimeout": 300
+        }
+      ]
+    },
+    "probes": {
+      "value": [
+        {
+          "name": "DefaultProbe",
+          "protocol": "Https",
+          "path": "/",
+          "host": "your-yelb-hostname",
+          "port": 443,
+          "interval": 60,
+          "timeout": 30,
+          "unhealthyThreshold": 3,
+          "pickHostNameFromBackendHttpSettings": false,
+          "match": {
+            "statusCodes": [
+              "200"
+            ]
+          }
+        }
+      ]
+    },
+    "redirectConfigurations": {
+      "value": []
+    }
+  }
+}
