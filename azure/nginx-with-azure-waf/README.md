@@ -2,13 +2,25 @@
 
 In this solution, the [Yelb](https://github.com/mreferre/yelb/) application is deployed on an [Azure Kubernetes Service (AKS)](https://docs.microsoft.com/en-us/azure/aks/intro-kubernetes) cluster and exposed through an ingress controller like the [NGINX ingress controller](https://github.com/kubernetes/ingress-nginx). The ingress controller service is accessible via an [internal (or private) load balancer](https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-overview), which is used to balance traffic within the virtual network housing the AKS cluster. This load balancer frontend can also be accessed from an on-premises network in a hybrid scenario. To learn more about utilizing an internal load balancer to restrict access to your applications in Azure Kubernetes Service (AKS), refer to the guide [Use an internal load balancer with Azure Kubernetes Service (AKS)](https://learn.microsoft.com/en-us/azure/aks/internal-lb?tabs=set-service-annotations).
 
+This sample supports installing the a [managed NGINX ingress controller with the application routing add-on](https://learn.microsoft.com/en-us/azure/aks/app-routing) or an unmanaged [NGINX ingress controller](https://github.com/kubernetes/ingress-nginx) using the [Helm chart](https://kubernetes.github.io/ingress-nginx). The application routing add-on with NGINX ingress controller provides the following features:
+
+- Easy configuration of managed NGINX Ingress controllers based on [Kubernetes NGINX Ingress controller](https://kubernetes.github.io/ingress-nginx/).
+- Integration with [Azure DNS](https://learn.microsoft.com/en-us/azure/dns/dns-overview) for public and private zone management.
+- SSL termination with certificates stored in [Azure Key Vault](https://learn.microsoft.com/en-us/azure/key-vault/general/overview).
+
+For other configurations, see:
+
+- [DNS and SSL configuration](https://learn.microsoft.com/en-us/azure/aks/app-routing-dns-ssl)
+- [Application routing add-on configuration](https://learn.microsoft.com/en-us/azure/aks/app-routing-nginx-configuration)
+- [Configure internal NGIX ingress controller for Azure private DNS zone](https://learn.microsoft.com/en-us/azure/aks/create-nginx-ingress-private-controller).
+
 To enhance security, the [Yelb](https://github.com/mreferre/yelb/) application is protected by an [Azure Application Gateway](https://learn.microsoft.com/en-us/azure/application-gateway/overview) resource, which is deployed in a dedicated subnet within the same virtual network as the AKS cluster or in a peered virtual network. Access to the Yelb application hosted on Azure Kubernetes Service (AKS) and exposed via the [Azure Application Gateway](https://learn.microsoft.com/en-us/azure/application-gateway/overview) is secured by the [Azure Web Application Firewall (WAF)](https://learn.microsoft.com/en-us/azure/web-application-firewall/overview). The WAF provides centralized protection for web applications against common exploits and vulnerabilities.
 
 ## Prerequisites
 
 - An active [Azure subscription](https://docs.microsoft.com/en-us/azure/guides/developer/azure-developer-guide#understanding-accounts-subscriptions-and-billing). If you don't have one, create a [free Azure account](https://azure.microsoft.com/free/) before you begin.
 - The **Owner** [Azure built-in role](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles), or the **User Access Administrator** and **Contributor** built-in roles, on a subscription in your Azure account.
-- [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) version 2.64.0 or later. For more information, see [Install Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli).
+- [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) version 2.61.0 or later. For more information, see [Install Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli).
 - [Azure Kubernetes Service (AKS) preview extension](https://learn.microsoft.com/en-us/azure/aks/draft#install-the-aks-preview-azure-cli-extension).
 - [jq](https://jqlang.github.io/jq/) version 1.5 or later.
 - [Python 3](https://www.python.org/downloads/) or later.
@@ -138,7 +150,10 @@ The following steps describe the deployment process. This workflow corresponds t
    - The name and resource group of the existing Azure Key Vault that holds the TLS certificate for the workload hostname and the Azure Front Door custom domain.
    - The name of the certificate in the key vault.
    - The name and resource group of the DNS zone that's used to resolve the Azure Front Door custom domain.
-3. The [deployment script](/azure/azure-resource-manager/bicep/deployment-script-bicep) uses Helm and YAML manifests to create the [NGINX ingress controller](https://docs.nginx.com/nginx-ingress-controller/intro/overview/) and a sample [httpbin](https://httpbin.org/) web application. The script defines a `SecretProviderClass` that retrieves the TLS certificate from the specified Azure key vault by using the user-defined managed identity of the [Azure Key Vault provider for Secrets Store CSI Driver](/azure/aks/csi-secrets-store-driver). The script also creates a Kubernetes secret. The deployment and ingress objects are configured to use the certificate that's stored in the Kubernetes secret.
+3. You can configure the [deployment script](/azure/azure-resource-manager/bicep/deployment-script-bicep) to install the following packages to your AKS cluster. For more information, check the parameters section of the Bicep module:
+   - [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/) using the [Prometheus Community Kubernetes Helm Charts](https://prometheus-community.github.io/helm-charts/). By default, this sample configuration does not install Prometheus and Grafana to the AKS cluster, and rather installs [Azure Managed Prometheus](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/azure-monitor-workspace-overview) and [Azure Managed Grafana](https://learn.microsoft.com/en-us/azure/managed-grafana/overview).
+   - [cert-manager](https://cert-manager.io/docs/). Certificate Manager is not necessary in this sample as both the Application Gateway and NGINX Ingress Controller will use a TLS certificate that has been uploaded to Azure Key Vault in advance.
+   - [NGINX Ingress Controller](https://docs.nginx.com/nginx-ingress-controller/intro/overview/) via an Helm chart. If you use the [managed NGINX ingress controller with the application routing add-on](https://learn.microsoft.com/en-us/azure/aks/app-routing), you don't need to install another instance of the NGINX Ingress Controller via Helm.
 4. The Application Gateway Listener retrieves the TLS certificate from Azure key Vault.
 5. When a DevOps engineer deploys the Yelb application, the [Kubernetes ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) object uses the certificate retrieved by the [Azure Key Vault provider for Secrets Store CSI Driver](/azure/aks/csi-secrets-store-driver) from Key Vault to expose the Yelb UI service via HTTPS.
 
@@ -161,7 +176,11 @@ The following steps describe the message flow for a request that an external cli
 
 ## Deployment
 
-A [Deployment Script](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deployment-script-bicep) is utilized to deploy the [cert-manager](https://cert-manager.io/docs/) and [NGINX Ingress Controller](https://docs.nginx.com/nginx-ingress-controller/intro/overview/) via an Helm chart. The NGINX ingress controller is set up to utilize the private IP address of the `kubernetes-internal` internal load balancer of the AKS cluster as its external IP.Additionally, the Bicep modules install a [managed NGINX ingress controller with the application routing add-on](https://learn.microsoft.com/en-us/azure/aks/app-routing). To use the managed NGINX ingress controller instead of the one deployed by the deployment script, you can easily modify the Bash scripts and YAML manifests found in the [scripts](./scripts/) folder.
+You can configure the [deployment script](/azure/azure-resource-manager/bicep/deployment-script-bicep) to install the following packages to your AKS cluster. For more information, check the parameters section of the Bicep module:
+
+- [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/) using the [Prometheus Community Kubernetes Helm Charts](https://prometheus-community.github.io/helm-charts/). By default, this sample configuration does not install Prometheus and Grafana to the AKS cluster, and rather installs [Azure Managed Prometheus](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/azure-monitor-workspace-overview) and [Azure Managed Grafana](https://learn.microsoft.com/en-us/azure/managed-grafana/overview).
+- [cert-manager](https://cert-manager.io/docs/). Certificate Manager is not necessary in this sample as both the Application Gateway and NGINX Ingress Controller will use a TLS certificate that has been uploaded to Azure Key Vault in advance.
+- [NGINX Ingress Controller](https://docs.nginx.com/nginx-ingress-controller/intro/overview/) via an Helm chart. If you use the [managed NGINX ingress controller with the application routing add-on](https://learn.microsoft.com/en-us/azure/aks/app-routing), you don't need to install another instance of the NGINX Ingress Controller via Helm. You can configure the NGINX ingress controller configured to utilize a public IP over the `kubernetes` public load balancer of the AKS cluster or a private IP address of the `kubernetes-internal` internal load balancer as its external IP. By default, Bicep modules install the [managed NGINX ingress controller with the application routing add-on](https://learn.microsoft.com/en-us/azure/aks/app-routing) and does not install another instance of the NGINX Ingress Controller via Helm.
 
 By default, Bicep modules install the AKS cluster with the [Azure CNI Overlay](https://learn.microsoft.com/en-us/azure/aks/azure-cni-overlay) network plugin and the [Cilium](https://learn.microsoft.com/en-us/azure/aks/azure-cni-powered-by-cilium) data plane. However, Bicep modules are parametric, so you can choose any network plugin.
 
@@ -213,7 +232,7 @@ The Bicep modules deploy or use the following Azure resources:
 | [Azure Monitor Workspace](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/azure-monitor-workspace-overview) | [Microsoft.Monitor/accounts](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/azure-monitor-workspace-overview) | An [Azure Monitor workspace](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/azure-monitor-workspace-overview) to store Prometheus metrics generated by the AKS cluster and workloads.You can [Prometheus query language (PromQL)](https://aka.ms/azureprometheus-promio-promql) to analyze and alert on the performance of monitored infrastructure and workloads without having to operate the underlying infrastructure. The primary method for visualizing Prometheus metrics is [Azure Managed Grafana](https://learn.microsoft.com/en-us/azure/managed-grafana/overview). |
 | [Azure Managed Grafana](https://learn.microsoft.com/en-us/azure/managed-grafana/overview) | [Microsoft.Dashboard/grafana](https://learn.microsoft.com/en-us/azure/templates/microsoft.dashboard/grafana?pivots=deployment-language-bicep) | an [Azure Managed Grafana](https://learn.microsoft.com/en-us/azure/managed-grafana/overview) instance used to visualize the [Prometheus metrics](https://learn.microsoft.com/en-us/azure/azure-monitor/containers/prometheus-metrics-enable?tabs=azure-portal) generated by the [Azure Kubernetes Service(AKS)](https://docs.microsoft.com/en-us/azure/aks/intro-kubernetes) cluster. [Azure Managed Grafana](https://learn.microsoft.com/en-us/azure/managed-grafana/overview) provides a set of built-in dashboards to visualize Prometheus metrics generated by your AKS cluster and workloads. |
 | [Azure Log Analytics Workspace](https://docs.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview) | [Microsoft.OperationalInsights/workspaces](https://docs.microsoft.com/en-us/azure/templates/microsoft.operationalinsights/workspaces) | A centralized Azure Log Analytics workspace used to collect diagnostics logs and metrics from various Azure resources. |
-| [Deployment Script](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deployment-script-bicep) | [Microsoft.Resources/deploymentScripts](https://learn.microsoft.com/en-us/azure/templates/microsoft.resources/deploymentscripts?pivots=deployment-language-bicep) | A deployment script is utilized to run the `install-internal-nginx-ingress-controller.sh` Bash script, which installs the [NGINX Ingress Controller](https://docs.nginx.com/nginx-ingress-controller/), [Cert-Manager](https://cert-manager.io/docs/), and [Prometheus](https://prometheus.io/) to the AKS cluster using [Helm](https://helm.sh/). However, the in-cluster Prometheus instance is not necessary as the Bicep modules install [Azure Managed Prometheus](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/azure-monitor-workspace-overview) and [Azure Managed Grafana](https://learn.microsoft.com/en-us/azure/managed-grafana/overview) to collect and monitor AKS Prometheus metrics. If needed, you can modify the `install-internal-nginx-ingress-controller.sh` script to exclude the installation of the in-cluster Prometheus. For more details on deployment scripts, refer to the [Use deployment scripts in Bicep](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deployment-script-bicep) documentation.|
+| [Deployment Script](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deployment-script-bicep) | [Microsoft.Resources/deploymentScripts](https://learn.microsoft.com/en-us/azure/templates/microsoft.resources/deploymentscripts?pivots=deployment-language-bicep) | A deployment script is utilized to run the `install-packages.sh` Bash script, which can optionally install the [NGINX Ingress Controller](https://docs.nginx.com/nginx-ingress-controller/), [Cert-Manager](https://cert-manager.io/docs/), [Prometheus](https://prometheus.io/), and [Grafana](https://grafana.com) to the AKS cluster using [Helm](https://helm.sh/). However, the in-cluster Prometheus and Grafana instances are not necessary as the Bicep modules install [Azure Managed Prometheus](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/azure-monitor-workspace-overview) and [Azure Managed Grafana](https://learn.microsoft.com/en-us/azure/managed-grafana/overview) to collect and monitor AKS Prometheus metrics. For more details on deployment scripts, refer to the [Use deployment scripts in Bicep](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deployment-script-bicep) documentation.|
 
 ## Deploy the Bicep modules
 
@@ -228,227 +247,282 @@ You can deploy the Bicep modules in the [bicep](./bicep/) folder using the [depl
 
 This is the full list of the parameters.
 
-Here is the markdown table extrapolated from the Bicep code:
-
 | Name                                      | Type                   | Description      |
 |-------------------------------------------|------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `prefix`                                  | string                 | Specifies the name prefix for all the Azure resources.                 |
-| `location`                                | string                 | Specifies the location for all the Azure resources.                    |
-| `userId`                                  | string                 | Specifies the object id of an Azure Active Directory user.             |
-| `letterCaseType`                          | string                 | Specifies whether name resources are in CamelCase, UpperCamelCase, or KebabCase.            |
-| `createMetricAlerts`                      | bool                   | Specifies whether creating metric alerts or not.                       |
-| `metricAlertsEnabled`                     | bool                   | Specifies whether metric alerts as either enabled or disabled.         |
-| `metricAlertsEvalFrequency`               | string                 | Specifies metric alerts eval frequency.                               |
-| `metricAlertsWindowsSize`                 | string                 | Specifies metric alerts window size.                                  |
-| `aksClusterDnsPrefix`                     | string                 | Specifies the DNS prefix specified when creating the managed cluster. |
-| `aksClusterNetworkPlugin`                 | string                 | Specifies the network plugin used for building Kubernetes network. - azure or kubenet.      |
-| `aksClusterNetworkPluginMode`             | string                 | Specifies the Network plugin mode used for building the Kubernetes network.                 |
-| `aksClusterNetworkPolicy`                 | string                 | Specifies the network policy used for building Kubernetes network. - calico or azure       |
-| `aksClusterNetworkDataplane`              | string                 | Specifies the network dataplane used in the Kubernetes cluster..      |
-| `aksClusterNetworkMode`                   | string                 | Specifies the network mode. This cannot be specified if networkPlugin is anything other than azure.|
-| `aksClusterPodCidr`                       | string                 | Specifies the CIDR notation IP range from which to assign pod IPs when kubenet is used.     |
-| `aksClusterServiceCidr`                   | string                 | A CIDR notation IP range from which to assign service cluster IPs. It must not overlap with any Subnet IP ranges.                                       |
-| `aksClusterDnsServiceIP`                  | string                 | Specifies the IP address assigned to the Kubernetes DNS service. It must be within the Kubernetes service address range specified in serviceCidr.       |
-| `aksClusterLoadBalancerSku`               | string                 | Specifies the sku of the load balancer used by the virtual machine scale sets used by nodepools.   |
-| `loadBalancerBackendPoolType`             | string                 | Specifies the type of the managed inbound Load Balancer BackendPool.  |
-| `advancedNetworking`                      | object                 | Specifies Advanced Networking profile for enabling observability on a cluster. Note that enabling advanced networking features may incur additional costs. |
-| `aksClusterIpFamilies`                    | array                  | Specifies the IP families are used to determine single-stack or dual-stack clusters. For single-stack, the expected value is IPv4. For dual-stack, the expected values are IPv4 and IPv6. |
-| `aksClusterOutboundType`                  | string                 | Specifies outbound (egress) routing method. - loadBalancer or userDefinedRouting.           |
-| `aksClusterSkuTier`                       | string                 | Specifies the tier of a managed cluster SKU: Paid or Free              |
-| `aksClusterKubernetesVersion`             | string                 | Specifies the version of Kubernetes specified when creating the managed cluster.           |
-| `aksClusterAdminUsername`                 | string                 | Specifies the administrator username of Linux virtual machines.        |
-| `aksClusterSshPublicKey`                  | string                 | Specifies the SSH RSA public key string for the Linux nodes.           |
-| `aadProfileTenantId`                      | string                 | Specifies the tenant id of the Azure Active Directory used by the AKS cluster for authentication.  |
-| `aadProfileAdminGroupObjectIDs`           | array                  | Specifies the AAD group object IDs that will have admin role of the cluster.                |
-| `aksClusterNodeOSUpgradeChannel`          | string                 | Specifies the node OS upgrade channel. The default is Unmanaged, but may change to either NodeImage or SecurityPatch at GA. .                             |
-| `aksClusterUpgradeChannel`                | string                 | Specifies the upgrade channel for auto upgrade. Allowed values include rapid, stable, patch, node-image, none.                                          |
-| `aksClusterEnablePrivateCluster`          | bool                   | Specifies whether to create the cluster as a private cluster or not.  |
-| `aksClusterWebAppRoutingEnabled`          | bool                   | Specifies whether the managed NGINX Ingress Controller application routing addon is enabled.|
-| `aksPrivateDNSZone`                       | string                 | Specifies the Private DNS Zone mode for private cluster. When the value is equal to None, a Public DNS Zone is used in place of a Private DNS Zone       |
-| `aksEnablePrivateClusterPublicFQDN`       | bool                   | Specifies whether to create additional public FQDN for private cluster or not.            |
-| `aadProfileManaged`                       | bool                   | Specifies whether to enable managed AAD integration.                  |
-| `aadProfileEnableAzureRBAC`               | bool                   | Specifies whether to enable Azure RBAC for Kubernetes authorization.  |
-| `systemAgentPoolName`                     | string                 | Specifies the unique name of of the system node pool profile in the context of the subscription and resource group.                                     |
-| `systemAgentPoolVmSize`                   | string                 | Specifies the vm size of nodes in the system node pool.               |
-| `systemAgentPoolOsDiskSizeGB`             | int                    | Specifies the OS Disk Size in GB to be used to specify the disk size for every machine in the system agent pool. |
-| `systemAgentPoolOsDiskType`               | string                 | Specifies the OS disk type to be used for machines in a given agent pool. |
-| `systemAgentPoolAgentCount`               | int                    | Specifies the number of agents (VMs) to host docker containers in the system node pool. Allowed values must be in the range of 1 to 100 (inclusive). The default value is 1.  |
-| `systemAgentPoolOsType`                   | string                 | Specifies the OS type for the vms in the system node pool. Choose from Linux and Windows. Default to Linux.                                             |
-| `systemAgentPoolOsSKU`                    | string                 | Specifies the OS SKU used by the system agent pool. If not specified, the default is Ubuntu if OSType=Linux or Windows2019 if OSType=Windows. |
-| `systemAgentPoolMaxPods`                  | int                    | Specifies the maximum number of pods that can run on a node in the system node pool. The maximum number of pods per node in an AKS cluster is 250. |
-| `systemAgentPoolMaxCount`                 | int                    | Specifies the maximum number of nodes for auto-scaling for the system node pool.            |
-| `systemAgentPoolMinCount`                 | int                    | Specifies the minimum number of nodes for auto-scaling for the system node pool.            |
-| `systemAgentPoolEnableAutoScaling`        | bool                   | Specifies whether to enable auto-scaling for the system node pool.    |
-| `systemAgentPoolScaleSetPriority`         | string                 | Specifies the virtual machine scale set priority in the system node pool: Spot or Regular. |
-| `systemAgentPoolScaleSetEvictionPolicy`   | string                 | Specifies the ScaleSetEvictionPolicy to be used to specify eviction policy for spot virtual machine scale set. Default to Delete. Allowed values are Delete or Deallocate.      |
-| `systemAgentPoolNodeLabels`               | object                 | Specifies the Agent pool node labels to be persisted across all nodes in the system node pool.     |
-| `systemAgentPoolNodeTaints`               | array                  | Specifies the taints added to new nodes during node pool create and scale. For example, key=value:NoSchedule.                                           |
-| `systemAgentPoolKubeletDiskType`          | string                 | Determines the placement of emptyDir volumes, container runtime data root, and Kubelet ephemeral storage.                                              |
-| `systemAgentPoolType`                     | string                 | Specifies the type for the system node pool: VirtualMachineScaleSets or AvailabilitySet    |
-| `systemAgentPoolAvailabilityZones`        | array                  | Specifies the availability zones for the agent nodes in the system node pool. Requirese the use of VirtualMachineScaleSets as node pool type.           |
-| `userAgentPoolName`                       | string                 | Specifies the unique name of of the user node pool profile in the context of the subscription and resource group.                                       |
-| `userAgentPoolVmSize`                     | string                 | Specifies the vm size of nodes in the user node pool.                 |
-| `userAgentPoolOsDiskSizeGB`               | int                    | Specifies the OS Disk Size in GB to be used to specify the disk size for every machine in the system agent pool.                                |
-| `userAgentPoolOsDiskType`                 | string                 | Specifies the OS disk type to be used for machines in a given agent pool. |
-| `userAgentPoolAgentCount`                 | int                    | Specifies the number of agents (VMs) to host docker containers in the user node pool. Allowed values must be in the range of 1 to 100 (inclusive). The default value is 1.     |
-| `userAgentPoolOsType`                     | string                 | Specifies the OS type for the vms in the user node pool. Choose from Linux and Windows. Default to Linux.                                                |
-| `userAgentPoolOsSKU`                      | string                 | Specifies the OS SKU used by the system agent pool. If not specified, the default is Ubuntu if OSType=Linux or Windows2019 if OSType=Windows. |
-| `userAgentPoolMaxPods`                    | int                    | Specifies the maximum number of pods that can run on a node in the user node pool. |
-| `userAgentPoolMaxCount`                   | int                    | Specifies the maximum number of nodes for auto-scaling for the user node pool.              |
-| `userAgentPoolMinCount`                   | int                    | Specifies the minimum number of nodes for auto-scaling for the user node pool.              |
-| `userAgentPoolEnableAutoScaling`          | bool                   | Specifies whether to enable auto-scaling for the user node pool.      |
-| `userAgentPoolScaleSetPriority`           | string                 | Specifies the virtual machine scale set priority in the user node pool: Spot or Regular.   |
-| `userAgentPoolScaleSetEvictionPolicy`     | string                 | Specifies the ScaleSetEvictionPolicy to be used to specify eviction policy for spot virtual machine scale set. Default to Delete. Allowed values are Delete or Deallocate.      |
-| `userAgentPoolNodeLabels`                 | object                 | Specifies the Agent pool node labels to be persisted across all nodes in the user node pool.|
-| `userAgentPoolNodeTaints`                 | array                  | Specifies the taints added to new nodes during node pool create and scale. For example, key=value:NoSchedule.                                           |
-| `userAgentPoolKubeletDiskType`            | string                 | Determines the placement of emptyDir volumes, container runtime data root, and Kubelet ephemeral storage.                                              |
-| `userAgentPoolType`                       | string                 | Specifies the type for the user node pool: VirtualMachineScaleSets or AvailabilitySet      |
-| `userAgentPoolAvailabilityZones`          | array                  | Specifies the availability zones for the agent nodes in the user node pool. Requirese the use of VirtualMachineScaleSets as node pool type.             |
-| `httpApplicationRoutingEnabled`           | bool                   | Specifies whether the httpApplicationRouting add-on is enabled or not.                     |
-| `istioServiceMeshEnabled`                 | bool                   | Specifies whether the Istio Service Mesh add-on is enabled or not.   |
-| `istioIngressGatewayEnabled`              | bool                   | Specifies whether the Istio Ingress Gateway is enabled or not.        |
-| `istioIngressGatewayType`                 | string                 | Specifies the type of the Istio Ingress Gateway.                      |
-| `kedaEnabled`                             | bool                   | Specifies whether the Kubernetes Event-Driven Autoscaler (KEDA) add-on is enabled or not.  |
-| `daprEnabled`                             | bool                   | Specifies whether the Dapr extension is enabled or not.              |
-| `daprHaEnabled`                           | bool                   | Enable high availability (HA) mode for the Dapr control plane         |
-| `fluxGitOpsEnabled`                       | bool                   | Specifies whether the Flux V2 extension is enabled or not.            |
-| `verticalPodAutoscalerEnabled`            | bool                   | Specifies whether the Vertical Pod Autoscaler is enabled or not.     |
-| `aciConnectorLinuxEnabled`                | bool                   | Specifies whether the aciConnectorLinux add-on is enabled or not.     |
-| `azurePolicyEnabled`                      | bool                   | Specifies whether the azurepolicy add-on is enabled or not.           |
-| `azureKeyvaultSecretsProviderEnabled`     | bool                   | Specifies whether the Azure Key Vault Provider for Secrets Store CSI Driver addon is enabled or not.                                                    |
-| `kubeDashboardEnabled`                    | bool                   | Specifies whether the kubeDashboard add-on is enabled or not.         |
-| `podIdentityProfileEnabled`               | bool                   | Specifies whether the pod identity addon is enabled..                 |
-| `autoScalerProfileScanInterval`           | string                 | Specifies the scan interval of the auto-scaler of the AKS cluster.   |
-| `autoScalerProfileScaleDownDelayAfterAdd` | string                 | Specifies the scale down delay after add of the auto-scaler of the AKS cluster.            |
-| `autoScalerProfileScaleDownDelayAfterDelete` | string               | Specifies the scale down delay after delete of the auto-scaler of the AKS cluster.         |
-| `autoScalerProfileScaleDownDelayAfterFailure` | string               | Specifies scale down delay after failure of the auto-scaler of the AKS cluster.           |
-| `autoScalerProfileScaleDownUnneededTime`  | string                 | Specifies the scale down unneeded time of the auto-scaler of the AKS cluster.              |
-| `autoScalerProfileScaleDownUnreadyTime`   | string                 | Specifies the scale down unready time of the auto-scaler of the AKS cluster.               |
-| `autoScalerProfileUtilizationThreshold`   | string                 | Specifies the utilization threshold of the auto-scaler of the AKS cluster.                 |
-| `autoScalerProfileMaxGracefulTerminationSec` | string  | Specifies the max graceful termination time interval in seconds for the auto-scaler of the AKS cluster.       |
-| `enableVnetIntegration`                    | bool    | Specifies whether to enable API server VNET integration for the cluster or not.                                |
-| `virtualNetworkName`                       | string  | Specifies the name of the virtual network.            |
-| `virtualNetworkAddressPrefixes`            | string  | Specifies the address prefixes of the virtual network.                                                         |
-| `systemAgentPoolSubnetName`                | string  | Specifies the name of the subnet hosting the worker nodes of the default system agent pool of the AKS cluster. |
-| `systemAgentPoolSubnetAddressPrefix`       | string  | Specifies the address prefix of the subnet hosting the worker nodes of the default system agent pool of the AKS cluster. |
-| `userAgentPoolSubnetName`                  | string  | Specifies the name of the subnet hosting the worker nodes of the user agent pool of the AKS cluster.           |
-| `userAgentPoolSubnetAddressPrefix`         | string  | Specifies the address prefix of the subnet hosting the worker nodes of the user agent pool of the AKS cluster.  |
-| `applicationGatewaySubnetName`             | string  | Specifies the name of the subnet which contains the Application Gateway.                                       |
-| `applicationGatewaySubnetAddressPrefix`    | string  | Specifies the address prefix of the subnet which contains the Application Gateway.                              |
-| `blobCSIDriverEnabled`                     | bool    | Specifies whether to enable the Azure Blob CSI Driver. The default value is false.                              |
-| `diskCSIDriverEnabled`                     | bool    | Specifies whether to enable the Azure Disk CSI Driver. The default value is true.                               |
-| `fileCSIDriverEnabled`                     | bool    | Specifies whether to enable the Azure File CSI Driver. The default value is true.                               |
-| `snapshotControllerEnabled`                | bool    | Specifies whether to enable the Snapshot Controller. The default value is true.                                 |
-| `defenderSecurityMonitoringEnabled`        | bool    | Specifies whether to enable Defender threat detection. The default value is false.                              |
-| `imageCleanerEnabled`                      | bool    | Specifies whether to enable ImageCleaner on AKS cluster. The default value is false.                           |
-| `imageCleanerIntervalHours`                | int     | Specifies whether ImageCleaner scanning interval in hours.                                                     |
-| `nodeRestrictionEnabled`                   | bool    | Specifies whether to enable Node Restriction. The default value is false.                                       |
-| `workloadIdentityEnabled`                  | bool    | Specifies whether to enable Workload Identity. The default value is false.                                      |
-| `oidcIssuerProfileEnabled`                 | bool    | Specifies whether the OIDC issuer is enabled.        |
-| `podSubnetName`                            | string  | Specifies the name of the subnet hosting the pods running in the AKS cluster.                                  |
-| `podSubnetAddressPrefix`                   | string  | Specifies the address prefix of the subnet hosting the pods running in the AKS cluster.                         |
-| `apiServerSubnetName`                      | string  | Specifies the name of the subnet delegated to the API server when configuring the AKS cluster to use API server VNET integration. |
-| `apiServerSubnetAddressPrefix`             | string  | Specifies the address prefix of the subnet delegated to the API server when configuring the AKS cluster to use API server VNET integration. |
-| `vmSubnetName`                             | string  | Specifies the name of the subnet which contains the virtual machine.                                            |
-| `vmSubnetAddressPrefix`                    | string  | Specifies the address prefix of the subnet which contains the virtual machine.                                   |
-| `bastionSubnetAddressPrefix`               | string  | Specifies the Bastion subnet IP prefix. This prefix must be within vnet IP prefix address space.                |
-| `logAnalyticsWorkspaceName`                | string  | Specifies the name of the Log Analytics Workspace.   |
-| `logAnalyticsSku`                          | string  | Specifies the service tier of the workspace: Free, Standalone, PerNode, Per-GB.                                |
-| `logAnalyticsRetentionInDays`              | int     | Specifies the workspace data retention in days. -1 means Unlimited retention for the Unlimited Sku. 730 days is the maximum allowed for all other Skus. |
-| `vmEnabled`                                | bool    | Specifies whether creating or not a jumpbox virtual machine in the AKS cluster virtual network.                |
-| `vmName`                                   | string  | Specifies the name of the virtual machine.           |
-| `vmSize`                                   | string  | Specifies the size of the virtual machine.           |
-| `imagePublisher`                           | string  | Specifies the image publisher of the disk image used to create the virtual machine.                             |
-| `imageOffer`                               | string  | Specifies the offer of the platform image or marketplace image used to create the virtual machine.              |
-| `imageSku`                                 | string  | Specifies the Ubuntu version for the VM. This will pick a fully patched image of this given Ubuntu version.    |
-| `authenticationType`                       | string  | Specifies the type of authentication when accessing the Virtual Machine. SSH key is recommended.               |
-| `vmAdminUsername`                          | string  | Specifies the name of the administrator account of the virtual machine.                                         |
-| `vmAdminPasswordOrKey`                     | string  | Specifies the SSH Key or password for the virtual machine. SSH key is recommended.                              |
-| `diskStorageAccountType`                   | string  | Specifies the storage account type for OS and data disk.                                                       |
-| `numDataDisks`                             | int     | Specifies the number of data disks of the virtual machine.                                                     |
-| `osDiskSize`                               | int     | Specifies the size in GB of the OS disk of the VM.   |
-| `dataDiskSize`                             | int     | Specifies the size in GB of the OS disk of the virtual machine.                                                |
-| `dataDiskCaching`                          | string  | Specifies the caching requirements for the data disks.                                                         |
-| `blobStorageAccountName`                   | string  | Specifies the globally unique name for the storage account used to store the boot diagnostics logs of the virtual machine. |
-| `blobStorageAccountPrivateEndpointName`     | string  | Specifies the name of the private link to the boot diagnostics storage account.                                |
-| `acrPrivateEndpointName`                   | string  | Specifies the name of the private link to the Azure Container Registry.                                        |
-| `acrName`                                  | string  | Name of your Azure Container Registry                 |
-| `acrAdminUserEnabled`                      | bool    | Enable admin user that have push / pull permission to the registry.                                             |
-| `acrSku`                                   | string  | Tier of your Azure Container Registry.               |
-| `acrPublicNetworkAccess`                   | string  | Whether to allow public network access. Defaults to Enabled.                                                   |
-| `acrAnonymousPullEnabled`                  | bool    | Specifies whether or not registry-wide pull is enabled from unauthenticated clients.                           |
-| `acrDataEndpointEnabled`                   | bool    | Specifies whether or not a single data endpoint is enabled per region for serving data.                         |
-| `acrNetworkRuleSet`                        | object  | Specifies the network rule set for the container registry.                                                     |
-| `acrNetworkRuleBypassOptions`              | string  | Specifies ehether to allow trusted Azure services to access a network restricted registry.                     |
-| `acrZoneRedundancy`                        | string  | Specifies whether or not zone redundancy is enabled for this container registry.                               |
-| `bastionHostEnabled`                       | bool    | Specifies whether Azure Bastion should be created.   |
-| `bastionHostName`                          | string  | Specifies the name of the Azure Bastion resource.    |
-| `applicationGatewayName`                   | string  | Specifies the name of the Application Gateway.       |
-| `applicationGatewaySkuName`                | string  | Specifies the sku of the Application Gateway.        |
-| `applicationGatewayPrivateIpAddress`        | string  | Specifies the private IP address of the Application Gateway.                                                   |
-| `applicationGatewayFrontendIpConfigurationType` | string  | Specifies the frontend IP configuration type.        |
-| `applicationGatewayPublicIpAddressName`     | string  | Specifies the name of the public IP adddress used by the Application Gateway.                                  |
-| `applicationGatewayAvailabilityZones`      | array   | Specifies the availability zones of the Application Gateway.                                                   |
-| `applicationGatewayMinCapacity`            | int     | Specifies the lower bound on number of Application Gateway capacity.                                           |
-| `applicationGatewayMaxCapacity`            | int     | Specifies the upper bound on number of Application Gateway capacity.                                           |
-| `backendAddressPoolName`                   | string  | Specifies the backend address pool name of the Application Gateway                                             |
-| `trustedRootCertificates`                  | array   | Specifies an array containing trusted root certificates.                                                       |
-| `probes`                                  | array   | Specifies an array containing custom probes.         |
-| `requestRoutingRules`                       | array   | Specifies an array containing request routing rules.                                                           |
-| `redirectConfigurations`                    | array   | Specifies an array containing redirect configurations.                                                         |
-| `httpListeners`                            | array   | Specifies an array containing http listeners.        |
-| `backendHttpSettings`                      | array   | Array containing backend http settings               |
-| `frontendPorts`                            | array   | Specifies an array containing frontend ports.        |
-| `wafPolicyName`                            | string  | Specifies the name of the WAF policy                 |
-| `wafPolicyMode`                            | string  | Specifies the mode of the WAF policy.                |
-| `wafPolicyState`                           | string  | Specifies the state of the WAF policy.               |
-| `wafPolicyFileUploadLimitInMb`             | int     | Specifies the maximum file upload size in Mb for the WAF policy.                                               |
-| `wafPolicyMaxRequestBodySizeInKb`          | int     | Specifies the maximum request body size in Kb for the WAF policy.                                              |
-| `wafPolicyRequestBodyCheck`                | bool    | Specifies the whether to allow WAF to check request Body.                                                      |
-| `wafPolicyRuleSetType`                     | string  | Specifies the rule set type.                          |
-| `wafPolicyRuleSetVersion`                  | string  | Specifies the rule set version.                       |
-| `natGatewayName`                            | string  | Specifies the name of the Azure NAT Gateway.         |
-| `natGatewayZones`                           | array   | Specifies a list of availability zones denoting the zone in which Nat Gateway should be deployed.              |
-| `natGatewayPublicIps`                       | int     | Specifies the number of Public IPs to create for the Azure NAT Gateway.                                        |
-| `natGatewayIdleTimeoutMins`                 | int     | Specifies the idle timeout in minutes for the Azure NAT Gateway.                                               |
-| `keyVaultPrivateEndpointName`               | string  | Specifies the name of the private link to the Key Vault.                                                       |
-| `keyVaultName`                             | string  | Specifies the name of an existing Key Vault resource holding the TLS certificate.                              |
-| `keyVaultResourceGroupName`                 | string  | Specifies the name of the resource group that contains the existing Key Vault resource.                        |
-| `tags`                                     | object  | Specifies the resource tags.                          |
-| `clusterTags`                              | object  | Specifies the resource tags.                          |
-| `actionGroupName`                          | string  | Specifies the name of the Action Group.               |
-| `actionGroupShortName`                     | string  | Specifies the short name of the action group.        |
-| `actionGroupEnabled`                        | bool    | Specifies whether this action group is enabled. If an action group is not enabled, then none of its receivers will receive communications.|
-| `actionGroupEmailAddress`                    | string  | Specifies the email address of the receiver.         |
-| `actionGroupUseCommonAlertSchema`            | bool    | Specifies whether to use common alert schema.        |
-| `actionGroupCountryCode`                   | string  | Specifies the country code of the SMS receiver.      |
-| `actionGroupPhoneNumber`                   | string  | Specifies the phone number of the SMS receiver.      |
-| `metricAnnotationsAllowList`               | string  | Specifies a comma-separated list of additional Kubernetes label keys that will be used in the resource labels metric. |
-| `metricLabelsAllowlist`                     | string  | Specifies a comma-separated list of Kubernetes annotations keys that will be used in the resource labels metric. |
-| `prometheusName`                           | string  | Specifies the name of the Azure Monitor managed service for Prometheus resource.                                |
-| `prometheusPublicNetworkAccess`            | string  | Specifies whether or not public endpoint access is allowed for the Azure Monitor managed service for Prometheus resource.  |
-| `grafanaName`                              | string  | Specifies the name of the Azure Managed Grafana resource.                                                      |
-| `grafanaSkuName`                           | string  | Specifies the sku of the Azure Managed Grafana resource.                                                       |
-| `grafanaApiKey`                            | string  | Specifies the api key setting of the Azure Managed Grafana resource.                                           |
-| `grafanaAutoGeneratedDomainNameLabelScope` | string  | Specifies the scope for dns deterministic name hash calculation.                                               |
-| `grafanaDeterministicOutboundIP`           | string  | Specifies whether the Azure Managed Grafana resource uses deterministic outbound IPs.                          |
-| `grafanaPublicNetworkAccess`               | string  | The state for enable or disable traffic over the public interface for the Azure Managed Grafana resource.      |
-| `grafanaZoneRedundancy`                    | string  | The zone redundancy setting of the Azure Managed Grafana resource.                                            |
-| `email`                                   | string  | Specifies the email address for the cert-manager cluster issuer.                                               |
-| `deploymentScripName`                      | string  | Specifies the name of the deployment script uri.     |
-| `deploymentScriptUri`                      | string  | Specifies the uri of the deployment script.          |
-| `dnsZoneName`                              | string  | Specifies the name of an existing public DNS zone.   |
-| `dnsZoneResourceGroupName`                  | string  | Specifies the name of the resource group which contains the public DNS zone.  |
-| `keyVaultCertificateName`                  | string  | Specifies the name of the Key Vault certificate.     |
+| `prefix`                                  | `string`                 | Specifies the name prefix for all the Azure resources.                 |
+| `location`                                | `string`                 | Specifies the location for all the Azure resources.                    |
+| `userId`                                  | `string`                 | Specifies the object id of an Azure Active Directory user.             |
+| `letterCaseType`                          | `string`                 | Specifies whether name resources are in CamelCase, UpperCamelCase, or KebabCase.            |
+| `createMetricAlerts`                      | `bool`                   | Specifies whether creating metric alerts or not.                       |
+| `metricAlertsEnabled`                     | `bool`                   | Specifies whether metric alerts as either enabled or disabled.         |
+| `metricAlertsEvalFrequency`               | `string`                 | Specifies metric alerts eval frequency.                               |
+| `metricAlertsWindowsSize`                 | `string`                 | Specifies metric alerts window size.                                  |
+| `aksClusterDnsPrefix`                     | `string`                 | Specifies the DNS prefix specified when creating the managed cluster. |
+| `aksClusterNetworkPlugin`                 | `string`                 | Specifies the network plugin used for building Kubernetes network. - azure or kubenet.      |
+| `aksClusterNetworkPluginMode`             | `string`                 | Specifies the Network plugin mode used for building the Kubernetes network.                 |
+| `aksClusterNetworkPolicy`                 | `string`                 | Specifies the network policy used for building Kubernetes network. - calico or azure       |
+| `aksClusterNetworkDataplane`              | `string`                 | Specifies the network dataplane used in the Kubernetes cluster..      |
+| `aksClusterNetworkMode`                   | `string`                 | Specifies the network mode. This cannot be specified if networkPlugin is anything other than azure.|
+| `aksClusterPodCidr`                       | `string`                 | Specifies the CIDR notation IP range from which to assign pod IPs when kubenet is used.     |
+| `aksClusterServiceCidr`                   | `string`                 | A CIDR notation IP range from which to assign service cluster IPs. It must not overlap with any Subnet IP ranges.                                       |
+| `aksClusterDnsServiceIP`                  | `string`                 | Specifies the IP address assigned to the Kubernetes DNS service. It must be within the Kubernetes service address range specified in serviceCidr.       |
+| `aksClusterLoadBalancerSku`               | `string`                 | Specifies the sku of the load balancer used by the virtual machine scale sets used by nodepools.   |
+| `loadBalancerBackendPoolType`             | `string`                 | Specifies the type of the managed inbound Load Balancer BackendPool.  |
+| `advancedNetworking`                      | `object`                 | Specifies Advanced Networking profile for enabling observability on a cluster. Note that enabling advanced networking features may incur additional costs. |
+| `aksClusterIpFamilies`                    | `array`                  | Specifies the IP families are used to determine single-stack or dual-stack clusters. For single-stack, the expected value is IPv4. For dual-stack, the expected values are IPv4 and IPv6. |
+| `aksClusterOutboundType`                  | `string`                 | Specifies outbound (egress) routing method. - loadBalancer or userDefinedRouting.           |
+| `aksClusterSkuTier`                       | `string`                 | Specifies the tier of a managed cluster SKU: Paid or Free              |
+| `aksClusterKubernetesVersion`             | `string`                 | Specifies the version of Kubernetes specified when creating the managed cluster.           |
+| `aksClusterAdminUsername`                 | `string`                 | Specifies the administrator username of Linux virtual machines.        |
+| `aksClusterSshPublicKey`                  | `string`                 | Specifies the SSH RSA public key string for the Linux nodes.           |
+| `aadProfileTenantId`                      | `string`                 | Specifies the tenant id of the Azure Active Directory used by the AKS cluster for authentication.  |
+| `aadProfileAdminGroupObjectIDs`           | `array`                  | Specifies the AAD group object IDs that will have admin role of the cluster.                |
+| `aksClusterNodeOSUpgradeChannel`          | `string`                 | Specifies the node OS upgrade channel. The default is Unmanaged, but may change to either NodeImage or SecurityPatch at GA. .                             |
+| `aksClusterUpgradeChannel`                | `string`                 | Specifies the upgrade channel for auto upgrade. Allowed values include rapid, stable, patch, node-image, none.                                          |
+| `aksClusterEnablePrivateCluster`          | `bool`                   | Specifies whether to create the cluster as a private cluster or not.  |
+| `aksClusterWebAppRoutingEnabled`          | `bool`                   | Specifies whether the managed NGINX Ingress Controller application routing addon is enabled.|
+| `aksClusterNginxDefaultIngressControllerType` | `string`             | Specifies the ingress type for the default NginxIngressController custom resource for the managed NGINX ingress controller. |
+| `aksPrivateDNSZone`                       | `string`                 | Specifies the Private DNS Zone mode for private cluster. When the value is equal to None, a Public DNS Zone is used in place of a Private DNS Zone       |
+| `aksEnablePrivateClusterPublicFQDN`       | `bool`                   | Specifies whether to create additional public FQDN for private cluster or not.            |
+| `aadProfileManaged`                       | `bool`                   | Specifies whether to enable managed AAD integration.                  |
+| `aadProfileEnableAzureRBAC`               | `bool`                   | Specifies whether to enable Azure RBAC for Kubernetes authorization.  |
+| `systemAgentPoolName`                     | `string`                 | Specifies the unique name of of the system node pool profile in the context of the subscription and resource group.                                     |
+| `systemAgentPoolVmSize`                   | `string`                 | Specifies the vm size of nodes in the system node pool.               |
+| `systemAgentPoolOsDiskSizeGB`             | `int`                    | Specifies the OS Disk Size in GB to be used to specify the disk size for every machine in the system agent pool. |
+| `systemAgentPoolOsDiskType`               | `string`                 | Specifies the OS disk type to be used for machines in a given agent pool. |
+| `systemAgentPoolAgentCount`               | `int`                    | Specifies the number of agents (VMs) to host docker containers in the system node pool. Allowed values must be in the range of 1 to 100 (inclusive). The default value is 1.  |
+| `systemAgentPoolOsType`                   | `string`                 | Specifies the OS type for the vms in the system node pool. Choose from Linux and Windows. Default to Linux.                                             |
+| `systemAgentPoolOsSKU`                    | `string`                 | Specifies the OS SKU used by the system agent pool. If not specified, the default is Ubuntu if OSType=Linux or Windows2019 if OSType=Windows. |
+| `systemAgentPoolMaxPods`                  | `int`                    | Specifies the maximum number of pods that can run on a node in the system node pool. The maximum number of pods per node in an AKS cluster is 250. |
+| `systemAgentPoolMaxCount`                 | `int`                    | Specifies the maximum number of nodes for auto-scaling for the system node pool.            |
+| `systemAgentPoolMinCount`                 | `int`                    | Specifies the minimum number of nodes for auto-scaling for the system node pool.            |
+| `systemAgentPoolEnableAutoScaling`        | `bool`                   | Specifies whether to enable auto-scaling for the system node pool.    |
+| `systemAgentPoolScaleSetPriority`         | `string`                 | Specifies the virtual machine scale set priority in the system node pool: Spot or Regular. |
+| `systemAgentPoolScaleSetEvictionPolicy`   | `string`                 | Specifies the ScaleSetEvictionPolicy to be used to specify eviction policy for spot virtual machine scale set. Default to Delete. Allowed values are Delete or Deallocate.      |
+| `systemAgentPoolNodeLabels`               | `object`                 | Specifies the Agent pool node labels to be persisted across all nodes in the system node pool.     |
+| `systemAgentPoolNodeTaints`               | `array`                  | Specifies the taints added to new nodes during node pool create and scale. For example, key=value:NoSchedule.                                           |
+| `systemAgentPoolKubeletDiskType`          | `string`                 | Determines the placement of emptyDir volumes, container runtime data root, and Kubelet ephemeral storage.                                              |
+| `systemAgentPoolType`                     | `string`                 | Specifies the type for the system node pool: VirtualMachineScaleSets or AvailabilitySet    |
+| `systemAgentPoolAvailabilityZones`        | `array`                  | Specifies the availability zones for the agent nodes in the system node pool. Requirese the use of VirtualMachineScaleSets as node pool type.           |
+| `userAgentPoolName`                       | `string`                 | Specifies the unique name of of the user node pool profile in the context of the subscription and resource group.                                       |
+| `userAgentPoolVmSize`                     | `string`                 | Specifies the vm size of nodes in the user node pool.                 |
+| `userAgentPoolOsDiskSizeGB`               | `int`                    | Specifies the OS Disk Size in GB to be used to specify the disk size for every machine in the system agent pool.                                |
+| `userAgentPoolOsDiskType`                 | `string`                 | Specifies the OS disk type to be used for machines in a given agent pool. |
+| `userAgentPoolAgentCount`                 | `int`                    | Specifies the number of agents (VMs) to host docker containers in the user node pool. Allowed values must be in the range of 1 to 100 (inclusive). The default value is 1.     |
+| `userAgentPoolOsType`                     | `string`                 | Specifies the OS type for the vms in the user node pool. Choose from Linux and Windows. Default to Linux.                                                |
+| `userAgentPoolOsSKU`                      | `string`                 | Specifies the OS SKU used by the system agent pool. If not specified, the default is Ubuntu if OSType=Linux or Windows2019 if OSType=Windows. |
+| `userAgentPoolMaxPods`                    | `int`                    | Specifies the maximum number of pods that can run on a node in the user node pool. |
+| `userAgentPoolMaxCount`                   | `int`                    | Specifies the maximum number of nodes for auto-scaling for the user node pool.              |
+| `userAgentPoolMinCount`                   | `int`                    | Specifies the minimum number of nodes for auto-scaling for the user node pool.              |
+| `userAgentPoolEnableAutoScaling`          | `bool`                   | Specifies whether to enable auto-scaling for the user node pool.      |
+| `userAgentPoolScaleSetPriority`           | `string`                 | Specifies the virtual machine scale set priority in the user node pool: Spot or Regular.   |
+| `userAgentPoolScaleSetEvictionPolicy`     | `string`                 | Specifies the ScaleSetEvictionPolicy to be used to specify eviction policy for spot virtual machine scale set. Default to Delete. Allowed values are Delete or Deallocate.      |
+| `userAgentPoolNodeLabels`                 | `object`                 | Specifies the Agent pool node labels to be persisted across all nodes in the user node pool.|
+| `userAgentPoolNodeTaints`                 | `array`                  | Specifies the taints added to new nodes during node pool create and scale. For example, key=value:NoSchedule.                                           |
+| `userAgentPoolKubeletDiskType`            | `string`                 | Determines the placement of emptyDir volumes, container runtime data root, and Kubelet ephemeral storage.                                              |
+| `userAgentPoolType`                       | `string`                 | Specifies the type for the user node pool: VirtualMachineScaleSets or AvailabilitySet      |
+| `userAgentPoolAvailabilityZones`          | `array`                  | Specifies the availability zones for the agent nodes in the user node pool. Requirese the use of VirtualMachineScaleSets as node pool type.             |
+| `httpApplicationRoutingEnabled`           | `bool`                   | Specifies whether the httpApplicationRouting add-on is enabled or not.                     |
+| `istioServiceMeshEnabled`                 | `bool`                   | Specifies whether the Istio Service Mesh add-on is enabled or not.   |
+| `istioIngressGatewayEnabled`              | `bool`                   | Specifies whether the Istio Ingress Gateway is enabled or not.        |
+| `istioIngressGatewayType`                 | `string`                 | Specifies the type of the Istio Ingress Gateway.                      |
+| `kedaEnabled`                             | `bool`                   | Specifies whether the Kubernetes Event-Driven Autoscaler (KEDA) add-on is enabled or not.  |
+| `daprEnabled`                             | `bool`                   | Specifies whether the Dapr extension is enabled or not.              |
+| `daprHaEnabled`                           | `bool`                   | Enable high availability (HA) mode for the Dapr control plane         |
+| `fluxGitOpsEnabled`                       | `bool`                   | Specifies whether the Flux V2 extension is enabled or not.            |
+| `verticalPodAutoscalerEnabled`            | `bool`                   | Specifies whether the Vertical Pod Autoscaler is enabled or not.     |
+| `aciConnectorLinuxEnabled`                | `bool`                   | Specifies whether the aciConnectorLinux add-on is enabled or not.     |
+| `azurePolicyEnabled`                      | `bool`                   | Specifies whether the azurepolicy add-on is enabled or not.           |
+| `azureKeyvaultSecretsProviderEnabled`     | `bool`                   | Specifies whether the Azure Key Vault Provider for Secrets Store CSI Driver addon is enabled or not.                                                    |
+| `kubeDashboardEnabled`                    | `bool`                   | Specifies whether the kubeDashboard add-on is enabled or not.         |
+| `podIdentityProfileEnabled`               | `bool`                   | Specifies whether the pod identity addon is enabled..                 |
+| `autoScalerProfileScanInterval`           | `string`                 | Specifies the scan interval of the auto-scaler of the AKS cluster.   |
+| `autoScalerProfileScaleDownDelayAfterAdd` | `string`                 | Specifies the scale down delay after add of the auto-scaler of the AKS cluster.            |
+| `autoScalerProfileScaleDownDelayAfterDelete` | `string`               | Specifies the scale down delay after delete of the auto-scaler of the AKS cluster.         |
+| `autoScalerProfileScaleDownDelayAfterFailure` | `string`               | Specifies scale down delay after failure of the auto-scaler of the AKS cluster.           |
+| `autoScalerProfileScaleDownUnneededTime`  | `string`                 | Specifies the scale down unneeded time of the auto-scaler of the AKS cluster.              |
+| `autoScalerProfileScaleDownUnreadyTime`   | `string`                 | Specifies the scale down unready time of the auto-scaler of the AKS cluster.               |
+| `autoScalerProfileUtilizationThreshold`   | `string`                 | Specifies the utilization threshold of the auto-scaler of the AKS cluster.                 |
+| `autoScalerProfileMaxGracefulTerminationSec` | `string` | Specifies the max graceful termination time interval in seconds for the auto-scaler of the AKS cluster.       |
+| `enableVnetIntegration`                    | `bool`    | Specifies whether to enable API server VNET integration for the cluster or not.                                |
+| `virtualNetworkName`                       | `string` | Specifies the name of the virtual network.            |
+| `virtualNetworkAddressPrefixes`            | `string` | Specifies the address prefixes of the virtual network.                                                         |
+| `systemAgentPoolSubnetName`                | `string` | Specifies the name of the subnet hosting the worker nodes of the default system agent pool of the AKS cluster. |
+| `systemAgentPoolSubnetAddressPrefix`       | `string` | Specifies the address prefix of the subnet hosting the worker nodes of the default system agent pool of the AKS cluster. |
+| `userAgentPoolSubnetName`                  | `string` | Specifies the name of the subnet hosting the worker nodes of the user agent pool of the AKS cluster.           |
+| `userAgentPoolSubnetAddressPrefix`         | `string` | Specifies the address prefix of the subnet hosting the worker nodes of the user agent pool of the AKS cluster.  |
+| `applicationGatewaySubnetName`             | `string` | Specifies the name of the subnet which contains the Application Gateway.                                       |
+| `applicationGatewaySubnetAddressPrefix`    | `string` | Specifies the address prefix of the subnet which contains the Application Gateway.                              |
+| `blobCSIDriverEnabled`                     | `bool`    | Specifies whether to enable the Azure Blob CSI Driver. The default value is false.                              |
+| `diskCSIDriverEnabled`                     | `bool`    | Specifies whether to enable the Azure Disk CSI Driver. The default value is true.                               |
+| `fileCSIDriverEnabled`                     | `bool`    | Specifies whether to enable the Azure File CSI Driver. The default value is true.                               |
+| `snapshotControllerEnabled`                | `bool`    | Specifies whether to enable the Snapshot Controller. The default value is true.                                 |
+| `defenderSecurityMonitoringEnabled`        | `bool`    | Specifies whether to enable Defender threat detection. The default value is false.                              |
+| `imageCleanerEnabled`                      | `bool`    | Specifies whether to enable ImageCleaner on AKS cluster. The default value is false.                           |
+| `imageCleanerIntervalHours`                | `int`     | Specifies whether ImageCleaner scanning interval in hours.                                                     |
+| `nodeRestrictionEnabled`                   | `bool`    | Specifies whether to enable Node Restriction. The default value is false.                                       |
+| `workloadIdentityEnabled`                  | `bool`    | Specifies whether to enable Workload Identity. The default value is false.                                      |
+| `oidcIssuerProfileEnabled`                 | `bool`    | Specifies whether the OIDC issuer is enabled.        |
+| `podSubnetName`                            | `string` | Specifies the name of the subnet hosting the pods running in the AKS cluster.                                  |
+| `podSubnetAddressPrefix`                   | `string` | Specifies the address prefix of the subnet hosting the pods running in the AKS cluster.                         |
+| `apiServerSubnetName`                      | `string` | Specifies the name of the subnet delegated to the API server when configuring the AKS cluster to use API server VNET integration. |
+| `apiServerSubnetAddressPrefix`             | `string` | Specifies the address prefix of the subnet delegated to the API server when configuring the AKS cluster to use API server VNET integration. |
+| `vmSubnetName`                             | `string` | Specifies the name of the subnet which contains the virtual machine.                                            |
+| `vmSubnetAddressPrefix`                    | `string` | Specifies the address prefix of the subnet which contains the virtual machine.                                   |
+| `bastionSubnetAddressPrefix`               | `string` | Specifies the Bastion subnet IP prefix. This prefix must be within vnet IP prefix address space.                |
+| `logAnalyticsWorkspaceName`                | `string` | Specifies the name of the Log Analytics Workspace.   |
+| `logAnalyticsSku`                          | `string` | Specifies the service tier of the workspace: Free, Standalone, PerNode, Per-GB.                                |
+| `logAnalyticsRetentionInDays`              | `int`     | Specifies the workspace data retention in days. -1 means Unlimited retention for the Unlimited Sku. 730 days is the maximum allowed for all other Skus. |
+| `vmEnabled`                                | `bool`    | Specifies whether creating or not a jumpbox virtual machine in the AKS cluster virtual network.                |
+| `vmName`                                   | `string` | Specifies the name of the virtual machine.           |
+| `vmSize`                                   | `string` | Specifies the size of the virtual machine.           |
+| `imagePublisher`                           | `string` | Specifies the image publisher of the disk image used to create the virtual machine.                             |
+| `imageOffer`                               | `string` | Specifies the offer of the platform image or marketplace image used to create the virtual machine.              |
+| `imageSku`                                 | `string` | Specifies the Ubuntu version for the VM. This will pick a fully patched image of this given Ubuntu version.    |
+| `authenticationType`                       | `string` | Specifies the type of authentication when accessing the Virtual Machine. SSH key is recommended.               |
+| `vmAdminUsername`                          | `string` | Specifies the name of the administrator account of the virtual machine.                                         |
+| `vmAdminPasswordOrKey`                     | `string` | Specifies the SSH Key or password for the virtual machine. SSH key is recommended.                              |
+| `diskStorageAccountType`                   | `string` | Specifies the storage account type for OS and data disk.                                                       |
+| `numDataDisks`                             | `int`     | Specifies the number of data disks of the virtual machine.                                                     |
+| `osDiskSize`                               | `int`     | Specifies the size in GB of the OS disk of the VM.   |
+| `dataDiskSize`                             | `int`     | Specifies the size in GB of the OS disk of the virtual machine.                                                |
+| `dataDiskCaching`                          | `string` | Specifies the caching requirements for the data disks.                                                         |
+| `blobStorageAccountName`                   | `string` | Specifies the globally unique name for the storage account used to store the boot diagnostics logs of the virtual machine. |
+| `blobStorageAccountPrivateEndpointName`     | `string` | Specifies the name of the private link to the boot diagnostics storage account.                                |
+| `acrPrivateEndpointName`                   | `string` | Specifies the name of the private link to the Azure Container Registry.                                        |
+| `acrName`                                  | `string` | Name of your Azure Container Registry                 |
+| `acrAdminUserEnabled`                      | `bool`    | Enable admin user that have push / pull permission to the registry.                                             |
+| `acrSku`                                   | `string` | Tier of your Azure Container Registry.               |
+| `acrPublicNetworkAccess`                   | `string` | Whether to allow public network access. Defaults to Enabled.                                                   |
+| `acrAnonymousPullEnabled`                  | `bool`    | Specifies whether or not registry-wide pull is enabled from unauthenticated clients.                           |
+| `acrDataEndpointEnabled`                   | `bool`    | Specifies whether or not a single data endpoint is enabled per region for serving data.                         |
+| `acrNetworkRuleSet`                        | `object`  | Specifies the network rule set for the container registry.                                                     |
+| `acrNetworkRuleBypassOptions`              | `string` | Specifies ehether to allow trusted Azure services to access a network restricted registry.                     |
+| `acrZoneRedundancy`                        | `string` | Specifies whether or not zone redundancy is enabled for this container registry.                               |
+| `bastionHostEnabled`                       | `bool`    | Specifies whether Azure Bastion should be created.   |
+| `bastionHostName`                          | `string` | Specifies the name of the Azure Bastion resource.    |
+| `applicationGatewayName`                   | `string` | Specifies the name of the Application Gateway.       |
+| `applicationGatewaySkuName`                | `string` | Specifies the sku of the Application Gateway.        |
+| `applicationGatewayPrivateIpAddress`        | `string` | Specifies the private IP address of the Application Gateway.                                                   |
+| `applicationGatewayFrontendIpConfigurationType` | `string` | Specifies the frontend IP configuration type.        |
+| `applicationGatewayPublicIpAddressName`     | `string` | Specifies the name of the public IP adddress used by the Application Gateway.                                  |
+| `applicationGatewayAvailabilityZones`      | `array`   | Specifies the availability zones of the Application Gateway.                                                   |
+| `applicationGatewayMinCapacity`            | `int`     | Specifies the lower bound on number of Application Gateway capacity.                                           |
+| `applicationGatewayMaxCapacity`            | `int`     | Specifies the upper bound on number of Application Gateway capacity.                                           |
+| `backendAddressPoolName`                   | `string` | Specifies the backend address pool name of the Application Gateway                                             |
+| `trustedRootCertificates`                  | `array`   | Specifies an array containing trusted root certificates.                                                       |
+| `probes`                                  | `array`   | Specifies an array containing custom probes.         |
+| `requestRoutingRules`                       | `array`   | Specifies an array containing request routing rules.                                                           |
+| `redirectConfigurations`                    | `array`   | Specifies an array containing redirect configurations.                                                         |
+| `httpListeners`                            | `array`   | Specifies an array containing http listeners.        |
+| `backendHttpSettings`                      | `array`   | `array` containing backend http settings               |
+| `frontendPorts`                            | `array`   | Specifies an array containing frontend ports.        |
+| `wafPolicyName`                            | `string` | Specifies the name of the WAF policy                 |
+| `wafPolicyMode`                            | `string` | Specifies the mode of the WAF policy.                |
+| `wafPolicyState`                           | `string` | Specifies the state of the WAF policy.               |
+| `wafPolicyFileUploadLimitInMb`             | `int`     | Specifies the maximum file upload size in Mb for the WAF policy.                                               |
+| `wafPolicyMaxRequestBodySizeInKb`          | `int`     | Specifies the maximum request body size in Kb for the WAF policy.                                              |
+| `wafPolicyRequestBodyCheck`                | `bool`    | Specifies the whether to allow WAF to check request Body.                                                      |
+| `wafPolicyRuleSetType`                     | `string` | Specifies the rule set type.                          |
+| `wafPolicyRuleSetVersion`                  | `string` | Specifies the rule set version.                       |
+| `natGatewayName`                            | `string` | Specifies the name of the Azure NAT Gateway.         |
+| `natGatewayZones`                           | `array`   | Specifies a list of availability zones denoting the zone in which Nat Gateway should be deployed.              |
+| `natGatewayPublicIps`                       | `int`     | Specifies the number of Public IPs to create for the Azure NAT Gateway.                                        |
+| `natGatewayIdleTimeoutMins`                 | `int`     | Specifies the idle timeout in minutes for the Azure NAT Gateway.                                               |
+| `keyVaultPrivateEndpointName`               | `string` | Specifies the name of the private link to the Key Vault.                                                       |
+| `keyVaultName`                             | `string` | Specifies the name of an existing Key Vault resource holding the TLS certificate.                              |
+| `keyVaultResourceGroupName`                 | `string` | Specifies the name of the resource group that contains the existing Key Vault resource.                        |
+| `tags`                                     | `object`  | Specifies the resource tags.                          |
+| `clusterTags`                              | `object`  | Specifies the resource tags.                          |
+| `actionGroupName`                          | `string` | Specifies the name of the Action Group.               |
+| `actionGroupShortName`                     | `string` | Specifies the short name of the action group.        |
+| `actionGroupEnabled`                        | `bool`    | Specifies whether this action group is enabled. If an action group is not enabled, then none of its receivers will receive communications.|
+| `actionGroupEmailAddress`                    | `string` | Specifies the email address of the receiver.         |
+| `actionGroupUseCommonAlertSchema`            | `bool`    | Specifies whether to use common alert schema.        |
+| `actionGroupCountryCode`                   | `string` | Specifies the country code of the SMS receiver.      |
+| `actionGroupPhoneNumber`                   | `string` | Specifies the phone number of the SMS receiver.      |
+| `metricAnnotationsAllowList`               | `string` | Specifies a comma-separated list of additional Kubernetes label keys that will be used in the resource labels metric. |
+| `metricLabelsAllowlist`                     | `string` | Specifies a comma-separated list of Kubernetes annotations keys that will be used in the resource labels metric. |
+| `prometheusName`                           | `string` | Specifies the name of the Azure Monitor managed service for Prometheus resource.                                |
+| `prometheusPublicNetworkAccess`            | `string` | Specifies whether or not public endpoint access is allowed for the Azure Monitor managed service for Prometheus resource.  |
+| `grafanaName`                              | `string` | Specifies the name of the Azure Managed Grafana resource.                                                      |
+| `grafanaSkuName`                           | `string` | Specifies the sku of the Azure Managed Grafana resource.                                                       |
+| `grafanaApiKey`                            | `string` | Specifies the api key setting of the Azure Managed Grafana resource.                                           |
+| `grafanaAutoGeneratedDomainNameLabelScope` | `string` | Specifies the scope for dns deterministic name hash calculation.                                               |
+| `grafanaDeterministicOutboundIP`           | `string` | Specifies whether the Azure Managed Grafana resource uses deterministic outbound IPs.                          |
+| `grafanaPublicNetworkAccess`               | `string` | The state for enable or disable traffic over the public interface for the Azure Managed Grafana resource.      |
+| `grafanaZoneRedundancy`                    | `string` | The zone redundancy setting of the Azure Managed Grafana resource.                                            |
+| `email`                                    | `string` | Specifies the email address for the cert-manager cluster issuer.                                               |
+| `deploymentScripName`                      | `string` | Specifies the name of the deployment script uri.     |
+| `deploymentScriptUri`                      | `string` | Specifies the uri of the deployment script.          |
+| `deployPrometheusAndGrafanaViaHelm`        | `bool` | Specifies whether to deploy Prometheus and Grafana to the AKS cluster using a Helm chart. |
+| `deployCertificateManagerViaHelm`          | `bool` | Specifies whether to whether to deploy the Certificate Manager to the AKS cluster using a Helm chart. |
+| `ingressClassNames`                        | `array` | Specifies the list of ingress classes for which a cert-manager cluster issuer should be created. |
+| `clusterIssuerNames`                       | `array` | Specifies the list of the names for the cert-manager cluster issuers. |
+| `deployNginxIngressControllerViaHelm`      | `string` | Specifies whether and how to deploy the NGINX Ingress Controller to the AKS cluster using a Helm chart. Possible values are None, Internal, and External. |
+| `azCliVersion`                             | `string` | Specifies the Azure CLI module version. |
+| `timeout`                                  | `string` | Specifies the maximum allowed script execution time specified in ISO 8601 format. Default value is P1D. |
+| `cleanupPreference`                        | `string` | Specifies the clean up preference when the script execution gets in a terminal state. Default setting is Always. |
+| `retentionInterval`                        | `string` | Specifies the interval for which the service retains the script resource after it reaches a terminal state. Resource will be deleted when this duration expires. |
+| `dnsZoneName`                              | `string` | Specifies the name of an existing public DNS zone.   |
+| `dnsZoneResourceGroupName`                 | `string` | Specifies the name of the resource group which contains the public DNS zone.  |
+| `keyVaultCertificateName`                  | `string` | Specifies the name of the Key Vault certificate.     |
 
 We suggest reading sensitive configuration data such as passwords or SSH keys from a pre-existing Azure Key Vault resource. For more information, see [Create parameters files for Bicep deployment](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameter-files?tabs=Bicep).
+
+The sample includes four distinct Bicep parameter files that allow you to deploy four different variations of the solution:
+
+- [main.http.nginxviaaddon.bicepparam](./bicep/main.http.nginxviaaddon.bicepparam): the Application Gateway communicates via HTTP with a managed NGINX Ingress Controller instance installed via the application routing add-on.
+- [main.http.nginxviahelm.bicepparam](./bicep/main.http.nginxviahelm.bicepparam): the Application Gateway communicates via HTTP an unmanaged NGINX Ingress Controller instance installed via Helm.
+- [main.https.nginxviaaddon.bicepparam](./bicep/main.https.nginxviaaddon.bicepparam): the Application Gateway communicates via HTTPS with the managed NGINX Ingress Controller installed via the application routing add-on.
+- [main.https.nginxviahelm.bicepparam](./bicep/main.https.nginxviahelm.bicepparam): the Application Gateway communicates via HTTPS an unmanaged NGINX Ingress Controller instance installed via Helm.
+
+The [deploy.sh](./bicep/deploy.sh) Bash script allows to choose one of these solutions.
 
 ```bash
 #!/bin/bash
 
 # Template
 template="main.bicep"
-parameters="main.bicepparam"
+
+# Print the menu
+echo "==============================================================================================="
+echo "Choose an Option to expose the Yelb UI via managed or unmanaged NGINX Ingress Controller (1-5): "
+echo "==============================================================================================="
+options=(
+  "HTTP with NGINX Ingress Controller deployed via application routing add-on"
+  "HTTP with NGINX Ingress Controller deployed via Helm chart"
+  "HTTPS with NGINX Ingress Controller deployed via application routing add-on"
+  "HTTPS with NGINX Ingress Controller deployed via Helm chart"
+  "Quit"
+)
+
+# Select an option
+COLUMNS=1
+select option in "${options[@]}"; do
+  case $option in
+    "HTTP with NGINX Ingress Controller deployed via application routing add-on")
+      parameters="main.http.nginxviaaddon.bicepparam"
+      break
+    ;;
+    "HTTP with NGINX Ingress Controller deployed via Helm chart")
+      parameters="main.http.nginxviahelm.bicepparam"
+      break
+    ;;
+    "HTTPS with NGINX Ingress Controller deployed via application routing add-on")
+      parameters="main.https.nginxviaaddon.bicepparam"
+      break
+    ;;
+    "HTTPS with NGINX Ingress Controller deployed via Helm chart")
+      parameters="main.https.nginxviahelm.bicepparam"
+      break
+    ;;
+    "Quit")
+      exit
+    ;;
+    *) echo "Invalid option $REPLY" ;;
+  esac
+done
 
 # AKS cluster name
 prefix="<your-azure-resource-prefix>"
@@ -462,7 +536,7 @@ installExtensions=0
 
 # Name and location of the resource group for the Azure Kubernetes Service (AKS) cluster
 resourceGroupName="${prefix}RG"
-location="<azure-region>"
+location="EastUS2"
 deploymentName="main"
 
 # Subscription id, subscription name, and tenant id of the current subscription
@@ -711,7 +785,13 @@ fi
 
 ## Deployment Script
 
-The sample makes use of a [Deployment Script](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deployment-script-bicep) to run the [install-internal-nginx-ingress-controller.sh](./bicep/install-internal-nginx-ingress-controller.sh) Bash script, which installs the [NGINX Ingress Controller](https://docs.nginx.com/nginx-ingress-controller/), [Cert-Manager](https://cert-manager.io/docs/), and [Prometheus](https://prometheus.io/) to the AKS cluster using [Helm](https://helm.sh/). The in-cluster Prometheus instance is not necessary as the Bicep modules install [Azure Managed Prometheus](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/azure-monitor-workspace-overview) and [Azure Managed Grafana](https://learn.microsoft.com/en-us/azure/managed-grafana/overview) to collect and monitor AKS Prometheus metrics. If needed, you can modify the `install-internal-nginx-ingress-controller.sh` script to remove the installation of the in-cluster Prometheus and Grafans instance. For more details on deployment scripts, refer to the [Use deployment scripts in Bicep](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deployment-script-bicep) documentation.
+The sample makes use of a [Deployment Script](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deployment-script-bicep) to run the [install-packages.sh](./bicep/install-packages.sh) Bash script, which can optionally install the following packages:
+
+- [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/) using the [Prometheus Community Kubernetes Helm Charts](https://prometheus-community.github.io/helm-charts/). By default, this sample configuration does not install Prometheus and Grafana to the AKS cluster, and rather installs [Azure Managed Prometheus](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/azure-monitor-workspace-overview) and [Azure Managed Grafana](https://learn.microsoft.com/en-us/azure/managed-grafana/overview).
+- [cert-manager](https://cert-manager.io/docs/). Certificate Manager is not necessary in this sample as both the Application Gateway and NGINX Ingress Controller will use a TLS certificate that has been uploaded to Azure Key Vault in advance.
+- [NGINX Ingress Controller](https://docs.nginx.com/nginx-ingress-controller/intro/overview/) via an Helm chart. By default, this sample configuration installs the [managed NGINX ingress controller with the application routing add-on](https://learn.microsoft.com/en-us/azure/aks/app-routing) and does not install the NGINX Ingress Controller via Helm.
+
+For more details on deployment scripts, refer to the [Use deployment scripts in Bicep](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deployment-script-bicep) documentation.
 
 ```bash
 # Install kubectl
@@ -732,53 +812,69 @@ private=$(az aks show --name $clusterName \
   --query apiServerAccessProfile.enablePrivateCluster \
   --output tsv)
 
+# Install openssl
+apk add --no-cache --quiet openssl
+
 # Install Helm
-curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 -o get_helm.sh -s
+wget -O get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
 chmod 700 get_helm.sh
-./get_helm.sh &>/dev/null
+./get_helm.sh
 
 # Add Helm repos
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm repo add jetstack https://charts.jetstack.io
+if [[ $deployPrometheusAndGrafanaViaHelm == 'true' ]]; then
+  echo "Adding Prometheus Helm repository..."
+  helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+fi
+
+if [[ $deployCertificateManagerViaHelm == 'true' ]]; then
+  echo "Adding cert-manager Helm repository..."
+  helm repo add jetstack https://charts.jetstack.io
+fi
+
+if [[ $deployNginxIngressControllerViaHelm != 'None' ]]; then
+  echo "Adding NGINX ingress controller Helm repository..."
+  helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+fi
 
 # Update Helm repos
+echo "Updating Helm repositories..."
 helm repo update
 
 # Install Prometheus
-helm install prometheus prometheus-community/kube-prometheus-stack \
-  --create-namespace \
-  --namespace prometheus \
-  --set prometheus.prometheusSpec.podMonitorSelectorNilUsesHelmValues=false \
-  --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false
-
-# Install NGINX ingress controller using the internal load balancer
-helm install nginx-ingress ingress-nginx/ingress-nginx \
-  --create-namespace \
-  --namespace ingress-basic \
-  --set controller.replicaCount=3 \
-  --set controller.nodeSelector."kubernetes\.io/os"=linux \
-  --set defaultBackend.nodeSelector."kubernetes\.io/os"=linux \
-  --set controller.metrics.enabled=true \
-  --set controller.metrics.serviceMonitor.enabled=true \
-  --set controller.metrics.serviceMonitor.additionalLabels.release="prometheus" \
-  --set controller.service.annotations."service\.beta\.kubernetes\.io/azure-load-balancer-health-probe-request-path"=/healthz \
-  --set controller.service.annotations."service\.beta\.kubernetes\.io/azure-load-balancer-internal"=true
+if [[ $deployPrometheusAndGrafanaViaHelm == 'true' ]]; then
+  echo "Installing Prometheus and Grafana..."
+  helm install prometheus prometheus-community/kube-prometheus-stack \
+    --create-namespace \
+    --namespace prometheus \
+    --set prometheus.prometheusSpec.podMonitorSelectorNilUsesHelmValues=false \
+    --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false
+fi
 
 # Install certificate manager
-helm install cert-manager jetstack/cert-manager \
-  --create-namespace \
-  --namespace cert-manager \
-  --set crds.enabled=true \
-  --set prometheus.enabled=true \
-  --set nodeSelector."kubernetes\.io/os"=linux
+if [[ $deployCertificateManagerViaHelm == 'true' ]]; then
+  echo "Installing cert-manager..."
+  helm install cert-manager jetstack/cert-manager \
+    --create-namespace \
+    --namespace cert-manager \
+    --set crds.enabled=true \
+    --set prometheus.enabled=true \
+    --set nodeSelector."kubernetes\.io/os"=linux
 
-# Create cluster issuer
-cat <<EOF | kubectl apply -f -
+# Create arrays from the comma-separated strings
+  IFS=',' read -ra ingressClassArray <<<"$ingressClassNames"   # Split the string into an array
+  IFS=',' read -ra clusterIssuerArray <<<"$clusterIssuerNames" # Split the string into an array
+
+  # Check if the two arrays have the same length and are not empty
+  # Check if the two arrays have the same length and are not empty
+  if [[ ${#ingressClassArray[@]} > 0 && ${#ingressClassArray[@]} == ${#clusterIssuerArray[@]} ]]; then
+    for i in ${!ingressClassArray[@]}; do
+      echo "Creating cluster issuer ${clusterIssuerArray[$i]} for the ${ingressClassArray[$i]} ingress class..."
+      # Create cluster issuer
+      cat <<EOF | kubectl apply -f -
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
-  name: letsencrypt-nginx
+  name: ${clusterIssuerArray[$i]}
 spec:
   acme:
     server: https://acme-v02.api.letsencrypt.org/directory
@@ -788,12 +884,46 @@ spec:
     solvers:
     - http01:
         ingress:
-          class: nginx
+          class: ${ingressClassArray[$i]}
           podTemplate:
             spec:
               nodeSelector:
                 "kubernetes.io/os": linux
 EOF
+    done
+  fi
+fi
+
+if [[ $deployNginxIngressControllerViaHelm == 'External' ]]; then
+  # Install NGINX ingress controller using the internal load balancer
+  echo "Installing NGINX ingress controller using the public load balancer..."
+  helm install nginx-ingress ingress-nginx/ingress-nginx \
+    --create-namespace \
+    --namespace ingress-basic \
+    --set controller.replicaCount=3 \
+    --set controller.nodeSelector."kubernetes\.io/os"=linux \
+    --set defaultBackend.nodeSelector."kubernetes\.io/os"=linux \
+    --set controller.metrics.enabled=true \
+    --set controller.metrics.serviceMonitor.enabled=true \
+    --set controller.metrics.serviceMonitor.additionalLabels.release="prometheus" \
+    --set controller.service.annotations."service\.beta\.kubernetes\.io/azure-load-balancer-health-probe-request-path"=/healthz
+fi
+
+if [[ $deployNginxIngressControllerViaHelm == 'Internal' ]]; then
+  # Install NGINX ingress controller using the internal load balancer
+  echo "Installing NGINX ingress controller using the internal load balancer..."
+  helm install nginx-ingress ingress-nginx/ingress-nginx \
+    --create-namespace \
+    --namespace ingress-basic \
+    --set controller.replicaCount=3 \
+    --set controller.nodeSelector."kubernetes\.io/os"=linux \
+    --set defaultBackend.nodeSelector."kubernetes\.io/os"=linux \
+    --set controller.metrics.enabled=true \
+    --set controller.metrics.serviceMonitor.enabled=true \
+    --set controller.metrics.serviceMonitor.additionalLabels.release="prometheus" \
+    --set controller.service.annotations."service\.beta\.kubernetes\.io/azure-load-balancer-health-probe-request-path"=/healthz \
+    --set controller.service.annotations."service\.beta\.kubernetes\.io/azure-load-balancer-internal"=true
+fi
 
 # Create output as JSON file
 echo '{}' |
@@ -802,11 +932,88 @@ echo '{}' |
   jq --arg x 'ingress-basic' '.nginxIngressController=$x' >$AZ_SCRIPTS_OUTPUT_PATH
 ```
 
-As you can note, when deploying the [NGINX Ingress Controller](https://docs.nginx.com/nginx-ingress-controller/intro/overview/) via Helm, the [service.beta.kubernetes.io/azure-load-balancer-internal](https://learn.microsoft.com/en-us/azure/aks/internal-lb#create-an-internal-load-balancer) to create the `kubernetes-internal` internal load balancer in the node resource group of the AKS cluster and expose the ingress controller service via a private IP address.
+As you can note, when `$deployNginxIngressControllerViaHelm == 'Internal'`, the script deploys the [NGINX Ingress Controller](https://docs.nginx.com/nginx-ingress-controller/intro/overview/) via Helm and sets the [service.beta.kubernetes.io/azure-load-balancer-internal](https://learn.microsoft.com/en-us/azure/aks/internal-lb#create-an-internal-load-balancer) annotation to `true`. This creates the `kubernetes-internal` internal load balancer in the node resource group of the AKS cluster and exposes the ingress controller service via a private IP address.
 
-The script creates a [ClusterIssuer](https://cert-manager.io/docs/concepts/issuer/) for the `Let's Encrypt` ACME certificate authority. However, in this sample, the [Kubernetes Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) object uses the same certificate as the one used by the Application Gateway from Key Vault.
+The script creates a [ClusterIssuer](https://cert-manager.io/docs/concepts/issuer/) for the `Let's Encrypt` ACME certificate authority for each cluster issuer and ingress class specified, respectively, in the `ingressClassNames` and `clusterIssuerNames` environment variables. However, in this sample, the [Kubernetes Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) object uses the same certificate as the one used by the Application Gateway from Key Vault.
 
-If you want to replace the NGINX ingress controller installed via Helm by the deployment script with the managed version installed by the application routing addon, you can just replace the `nginx` `ingressClassName` in the `ingress` object with the name of the ingress controller deployed by the application routing addon, that, by default is equal to `webapprouting.kubernetes.azure.com`
+## Yelb Application
+
+The current architecture layout of the sample is straightforward. It consists of a front-end component called `yelb-ui` and an application component called `yelb-appserver`.
+
+![Yelb](../../images/yelb-architecture.png)
+
+The `yelb-ui` is responsible for serving the JavaScript code to the browser. This code is compiled from an Angular 2 application. Depending on the deployment model, the code can be served from an EC2 instance, a container (Docker, Kubernetes, ECS), or an S3 bucket (serverless). The `yelb-ui` component may also include an `nginx` proxy, depending on the deployment model. The `yelb-appserver` is a Sinatra application that interacts with a cache server (`redis-server`) and a Postgres backend database (`yelb-db`). Redis is used to store the number of page views, while Postgres is used to persist the votes. In the serverless deployment model, DynamoDB is used as a replacement for both redis and postgres.
+
+Yelb allows users to vote on a set of alternatives (restaurants) and dynamically updates pie charts based on the number of votes received. 
+
+![Yelb UI](../../images/yelb-ui.png)
+
+The Yelb application also keeps track of the number of page views and displays the hostname of the `yelb-appserver` instance serving the API request upon a vote or a page refresh. This allows individuals to demo the application solo or involve others in interacting with the application.
+
+## Check the Environment
+
+Before deploying the application, check your AKS cluster to make sure it's properly configured. Start by listing the namespaces in your Kubernetes cluster by running the following command:
+
+```bash
+ kubectl get namespace
+```
+
+If you installed the NGINX Ingress Controller using the application routing add-on, you should see the `app-routing-system` namespace.
+
+```bash
+NAME                 STATUS   AGE
+app-routing-system   Active   4h28m
+cert-manager         Active   109s
+dapr-system          Active   4h18m
+default              Active   4h29m
+gatekeeper-system    Active   4h28m
+kube-node-lease      Active   4h29m
+kube-public          Active   4h29m
+kube-system          Active   4h29m
+```
+
+If you run the following command:
+
+```bash
+kubectl get service --namespace app-routing-system -o wide
+```
+
+you can see that the `EXTERNAL-IP` of the `nginx` service is a private IP address. This is the private IP addres of a frontend IP configuration in the `kubernetes-internal` private load balancer of your AKS cluster.
+
+```bash
+NAME    TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)                                      AGE     SELECTOR
+nginx   LoadBalancer   172.16.55.104   10.240.0.7    80:31447/TCP,443:31772/TCP,10254:30459/TCP   4h28m   app=nginx
+```
+
+Instead, if you installed the NGINX Ingress Controller via Helm, you should see the `ingress-basic` namespace.
+
+```bash
+NAME                STATUS   AGE
+cert-manager        Active   7m42s
+dapr-system         Active   11m
+default             Active   21m
+gatekeeper-system   Active   20m
+ingress-basic       Active   7m19s
+kube-node-lease     Active   21m
+kube-public         Active   21m
+kube-system         Active   21m
+prometheus          Active   8m9s
+```
+
+If you run the following command:
+
+```bash
+kubectl get service --namespace ingress-basic
+```
+
+you can see that the `EXTERNAL-IP` of the `nginx-ingress-ingress-nginx-controller` service is a private IP address. This is the private IP addres of a frontend IP configuration in the `kubernetes-internal` private load balancer of your AKS cluster.
+
+```bash
+NAME                                               TYPE           CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE
+nginx-ingress-ingress-nginx-controller             LoadBalancer   172.16.42.152    10.240.0.7    80:32117/TCP,443:32513/TCP   7m31s
+nginx-ingress-ingress-nginx-controller-admission   ClusterIP      172.16.78.85     <none>        443/TCP                      7m31s
+nginx-ingress-ingress-nginx-controller-metrics     ClusterIP      172.16.109.138   <none>        10254/TCP                    7m31s
+```
 
 ## Deploy the Yelb application
 
@@ -835,9 +1042,15 @@ NGINX_CHART_NAME="ingress-nginx"
 NGINX_RELEASE_NAME="ingress-nginx"
 NGINX_REPLICA_COUNT=3
 
-# Ingress and DNS
-INGRESS_CLASS_NAME="nginx"
+# Specify the ingress class name for the ingress controller.
+# - nginx: unmanaged NGINX ingress controller installed via Helm
+# - webapprouting.kubernetes.azure.com: managed NGINX ingress controller installed via AKS application routing add-on
+INGRESS_CLASS_NAME="webapprouting.kubernetes.azure.com"
+
+# Subdomain of the Yelb UI service
 SUBDOMAIN="<yelb-application-subdomain>"
+
+# URL of the Yelb UI service
 URL="https://$SUBDOMAIN.$DNS_ZONE_NAME"
 
 # Secret Provider Class
@@ -847,6 +1060,11 @@ KEY_VAULT_SECRET_PROVIDER_IDENTITY_CLIENT_ID="<key-vault-secret-provider-identit
 TLS_SECRET_NAME="yelb-tls-secret"
 NAMESPACE="yelb"
 ```
+
+Make sure to properly set a value for each variable, and in particular to set `INGRESS_CLASS_NAME` to one of the following values:
+
+- `webapprouting.kubernetes.azure.com` if you installed the NGINX Ingress Controller via the [application routing add-on for AKS](https://docs.microsoft.com/en-us/azure/application-gateway/ingress-controller-add-on-for-aks).
+- `nginx` if you installed the NGINX Ingress Controller via [Helm](https://helm.sh/).
 
 You can run the following [az aks show](https://learn.microsoft.com/en-us/cli/azure/aks?view=azure-cli-latest#az-aks-show) command to retrieve the `clientId` of the [user-assigned managed identity](https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/how-manage-user-assigned-managed-identities) used by the [Azure Key Vault Provider for Secrets Store CSI Driver](https://learn.microsoft.com/en-us/azure/aks/csi-secrets-store-identity-access). The `keyVault.bicep` module [Key Vault Administrator](https://learn.microsoft.com/en-us/azure/key-vault/general/rbac-guide?tabs=azure-cli#azure-built-in-roles-for-key-vault-data-plane-operations) role to the user-assigned managed identity of the addon to let it retrieve the certificate used by [Kubernetes Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) used to expose the `yelb-ui` service via the [NGINX ingress controller](https://docs.nginx.com/nginx-ingress-controller/intro/overview/).
 
@@ -903,19 +1121,7 @@ fi
 helm get values $NGINX_RELEASE_NAME --namespace $NGINX_NAMESPACE
 ```
 
-You are now ready to deploy the [Yelb](https://github.com/mreferre/yelb/) application. The current architecture layout of the sample is straightforward. It consists of a front-end component called `yelb-ui` and an application component called `yelb-appserver`.
-
-![Yelb](../../images/yelb-architecture.png)
-
-The `yelb-ui` is responsible for serving the JavaScript code to the browser. This code is compiled from an Angular 2 application. Depending on the deployment model, the code can be served from an EC2 instance, a container (Docker, Kubernetes, ECS), or an S3 bucket (serverless). The `yelb-ui` component may also include an `nginx` proxy, depending on the deployment model. The `yelb-appserver` is a Sinatra application that interacts with a cache server (`redis-server`) and a Postgres backend database (`yelb-db`). Redis is used to store the number of page views, while Postgres is used to persist the votes. In the serverless deployment model, DynamoDB is used as a replacement for both redis and postgres.
-
-Yelb allows users to vote on a set of alternatives (restaurants) and dynamically updates pie charts based on the number of votes received. 
-
-![Yelb UI](../../images/yelb-ui.png)
-
-The Yelb application also keeps track of the number of page views and displays the hostname of the `yelb-appserver` instance serving the API request upon a vote or a page refresh. This allows individuals to demo the application solo or involve others in interacting with the application.
-
-You can run the [03-deploy-yelb.sh](./scripts/https/03-deploy-yelb.sh) to deploy the Yelb application and a [Kubernetes Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) object to make the `yelb-ui`service accessible to the public internet.
+You are now ready to deploy the [Yelb](https://github.com/mreferre/yelb/) application. You can run the [03-deploy-yelb.sh](./scripts/https/03-deploy-yelb.sh) to deploy the Yelb application and a [Kubernetes Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) object to make the `yelb-ui`service accessible to the public internet.
 
 ```bash
 #!/bin/bash

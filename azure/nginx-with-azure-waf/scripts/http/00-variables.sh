@@ -18,7 +18,13 @@ NGINX_CHART_NAME="ingress-nginx"
 NGINX_RELEASE_NAME="ingress-nginx"
 NGINX_REPLICA_COUNT=3
 
-# Ingress and DNS
-INGRESS_CLASS_NAME="nginx"
+# Specify the ingress class name for the ingress controller.
+# - nginx: unmanaged NGINX ingress controller installed via Helm
+# - webapprouting.kubernetes.azure.com: managed NGINX ingress controller installed via AKS application routing add-on
+INGRESS_CLASS_NAME="webapprouting.kubernetes.azure.com"
+
+# Subdomain of the Yelb UI service
 SUBDOMAIN="<your-yelb-application-subdomain>"
+
+# URL of the Yelb UI service
 URL="https://$SUBDOMAIN.$DNS_ZONE_NAME"

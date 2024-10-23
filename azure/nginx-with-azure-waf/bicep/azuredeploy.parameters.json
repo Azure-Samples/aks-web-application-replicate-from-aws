@@ -208,7 +208,7 @@
       "value": true
     },
     "deploymentScriptUri": {
-      "value": "https://raw.githubusercontent.com/paolosalvatori/scripts/refs/heads/main/install-internal-nginx-ingress-controller.sh"
+      "value": "https://raw.githubusercontent.com/paolosalvatori/scripts/refs/heads/main/install-packages.sh"
     },
     "blobCSIDriverEnabled": {
       "value": true
