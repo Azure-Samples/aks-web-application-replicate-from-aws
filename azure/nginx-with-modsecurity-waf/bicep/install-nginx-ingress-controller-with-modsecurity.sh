@@ -16,10 +16,13 @@ private=$(az aks show --name $clusterName \
   --query apiServerAccessProfile.enablePrivateCluster \
   --output tsv)
 
+# Install openssl
+apk add --no-cache --quiet openssl
+
 # Install Helm
-curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 -o get_helm.sh -s
+wget -O get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
 chmod 700 get_helm.sh
-./get_helm.sh &>/dev/null
+./get_helm.sh
 
 # Add Helm repos
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts

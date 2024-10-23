@@ -507,6 +507,15 @@ param ipFamilies array = ['IPv4']
 @description('Specifies whether the managed NGINX Ingress Controller application routing addon is enabled.')
 param webAppRoutingEnabled bool = true
 
+@description('Specifies the ingress type for the default NginxIngressController custom resource')
+@allowed([
+  'AnnotationControlled'
+  'External'
+  'Internal'
+  'None'
+])
+param nginxDefaultIngressControllerType string = 'AnnotationControlled'
+
 @description('Specifies the name of the public DNS zone used by the managed NGINX Ingress Controller, when enabled.')
 param dnsZoneName string
 
@@ -719,6 +728,9 @@ resource aksCluster 'Microsoft.ContainerService/managedClusters@2024-06-02-previ
         dnsZoneResourceIds: [
           dnsZone.id
         ]
+        nginx: {
+          defaultIngressControllerType: nginxDefaultIngressControllerType
+        }
       }
     }
     networkProfile: {

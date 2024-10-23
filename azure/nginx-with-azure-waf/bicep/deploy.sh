@@ -4,24 +4,35 @@
 template="main.bicep"
 
 # Print the menu
-echo "==============================================="
-echo "Choose an Option for the Yelb UI service (1-3): "
-echo "==============================================="
+echo "==============================================================================================="
+echo "Choose an Option to expose the Yelb UI via managed or unmanaged NGINX Ingress Controller (1-5): "
+echo "==============================================================================================="
 options=(
-  "HTTP"
-  "HTTPS"
+  "HTTP with NGINX Ingress Controller deployed via application routing add-on"
+  "HTTP with NGINX Ingress Controller deployed via Helm chart"
+  "HTTPS with NGINX Ingress Controller deployed via application routing add-on"
+  "HTTPS with NGINX Ingress Controller deployed via Helm chart"
+  "Quit"
 )
 
 # Select an option
-COLUMNS=0
+COLUMNS=1
 select option in "${options[@]}"; do
   case $option in
-    "HTTP")
-      parameters="main.http.bicepparam"
+    "HTTP with NGINX Ingress Controller deployed via application routing add-on")
+      parameters="main.http.nginxviaaddon.bicepparam"
       break
     ;;
-    "HTTPS")
-      parameters="main.https.bicepparam"
+    "HTTP with NGINX Ingress Controller deployed via Helm chart")
+      parameters="main.http.nginxviahelm.bicepparam"
+      break
+    ;;
+    "HTTPS with NGINX Ingress Controller deployed via application routing add-on")
+      parameters="main.https.nginxviaaddon.bicepparam"
+      break
+    ;;
+    "HTTPS with NGINX Ingress Controller deployed via Helm chart")
+      parameters="main.https.nginxviahelm.bicepparam"
       break
     ;;
     "Quit")

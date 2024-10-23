@@ -80,7 +80,7 @@ param kedaEnabled = true
 param daprEnabled = true
 param fluxGitOpsEnabled = false
 param verticalPodAutoscalerEnabled = true
-param deploymentScriptUri = 'https://raw.githubusercontent.com/paolosalvatori/scripts/refs/heads/main/install-internal-nginx-ingress-controller.sh'
+param deploymentScriptUri = 'https://raw.githubusercontent.com/azure-samples/aks-web-application-replicate-from-aws/refs/heads/main/azure/nginx-with-azure-waf/bicep/install-packages.sh'
 param blobCSIDriverEnabled = true
 param diskCSIDriverEnabled = true
 param fileCSIDriverEnabled = true
@@ -127,8 +127,8 @@ param requestRoutingRules = [
 param backendHttpSettings = [
   {
     name: backendHttpSettingsName
-    port: 443
-    protocol: 'Https'
+    port: 80
+    protocol: 'Http'
     cookieBasedAffinity: 'Disabled'
     probeName: probeName
     probeEnabled: true
@@ -139,10 +139,10 @@ param backendHttpSettings = [
 param probes = [
   {
     name: probeName
-    protocol: 'Https'
+    protocol: 'Http'
     path: '/'
     host: hostnames[0]
-    port: 443
+    port: 80
     interval: 60
     timeout: 30
     unhealthyThreshold: 3
@@ -155,3 +155,9 @@ param probes = [
   }
 ]
 param redirectConfigurations = []
+param deployPrometheusAndGrafanaViaHelm = false
+param deployCertificateManagerViaHelm = true
+param ingressClassNames = ['webapprouting.kubernetes.azure.com']
+param clusterIssuerNames = ['letsencrypt-nginx']
+param deployNginxIngressControllerViaHelm = 'None'
+param email = '<your-email-adddress>'

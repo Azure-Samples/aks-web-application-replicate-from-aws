@@ -14,7 +14,7 @@ param aksClusterNetworkDataplane = 'cilium'
 param aksClusterNetworkPlugin = 'azure'
 param aksClusterNetworkPluginMode = 'overlay'
 param aksClusterNetworkPolicy = 'cilium'
-param aksClusterWebAppRoutingEnabled = true
+param aksClusterWebAppRoutingEnabled = false
 param aksClusterSkuTier = 'Standard'
 param aksClusterPodCidr = '192.168.0.0/16'
 param aksClusterServiceCidr = '172.16.0.0/16'
@@ -80,7 +80,7 @@ param kedaEnabled = true
 param daprEnabled = true
 param fluxGitOpsEnabled = false
 param verticalPodAutoscalerEnabled = true
-param deploymentScriptUri = 'https://raw.githubusercontent.com/azure-samples/aks-web-application-replicate-from-aws/refs/heads/main/azure/nginx-with-azure-waf/bicep/install-internal-nginx-ingress-controller.sh'
+param deploymentScriptUri = 'https://raw.githubusercontent.com/azure-samples/aks-web-application-replicate-from-aws/refs/heads/main/azure/nginx-with-azure-waf/bicep/install-packages.sh'
 param blobCSIDriverEnabled = true
 param diskCSIDriverEnabled = true
 param fileCSIDriverEnabled = true
@@ -155,3 +155,9 @@ param probes = [
   }
 ]
 param redirectConfigurations = []
+param deployPrometheusAndGrafanaViaHelm = true
+param deployCertificateManagerViaHelm = true
+param ingressClassNames = ['nginx']
+param clusterIssuerNames = ['letsencrypt-nginx']
+param deployNginxIngressControllerViaHelm = 'Internal'
+param email = '<your-email-adddress>'

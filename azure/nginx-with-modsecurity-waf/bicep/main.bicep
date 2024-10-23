@@ -170,6 +170,15 @@ param aksClusterEnablePrivateCluster bool = true
 @description('Specifies whether the managed NGINX Ingress Controller application routing addon is enabled.')
 param aksClusterWebAppRoutingEnabled bool = true
 
+@description('Specifies the ingress type for the default NginxIngressController custom resource')
+@allowed([
+  'AnnotationControlled'
+  'External'
+  'Internal'
+  'None'
+])
+param aksClusterNginxDefaultIngressControllerType string = 'Internal'
+
 @description('Specifies the Private DNS Zone mode for private cluster. When the value is equal to None, a Public DNS Zone is used in place of a Private DNS Zone')
 param aksPrivateDNSZone string = 'none'
 
@@ -670,45 +679,45 @@ param keyVaultPrivateEndpointName string = letterCaseType == 'UpperCamelCase'
   ? 'KeyVaultPrivateEndpoint'
   : letterCaseType == 'CamelCase' ? 'keyVaultPrivateEndpoint' : 'key-vault-private-endpoint'
 
-  @description('Specifies the name of the Azure Key Vault resource.')
-  param keyVaultName string = letterCaseType == 'UpperCamelCase'
+@description('Specifies the name of the Azure Key Vault resource.')
+param keyVaultName string = letterCaseType == 'UpperCamelCase'
   ? '${toUpper(first(prefix))}${toLower(substring(prefix, 1, length(prefix) - 1))}KeyVault'
   : letterCaseType == 'CamelCase' ? '${toLower(prefix)}KeyVault' : '${toLower(prefix)}-key-vault'
-  
-  @description('Specifies whether to allow public network access for Key Vault.')
-  @allowed([
-    'Disabled'
-    'Enabled'
-  ])
-  param keyVaultPublicNetworkAccess string = 'Disabled'
-  
-  @description('Specifies the default action of allow or deny when no other rules match for the Azure Key Vault resource. Allowed values: Allow or Deny')
-  @allowed([
-    'Allow'
-    'Deny'
-  ])
-  param keyVaultNetworkAclsDefaultAction string = 'Allow'
-  
-  @description('Specifies whether the Azure Key Vault resource is enabled for deployments.')
-  param keyVaultEnabledForDeployment bool = true
-  
-  @description('Specifies whether the Azure Key Vault resource is enabled for disk encryption.')
-  param keyVaultEnabledForDiskEncryption bool = true
-  
-  @description('Specifies whether the Azure Key Vault resource is enabled for template deployment.')
-  param keyVaultEnabledForTemplateDeployment bool = true
-  
-  @description('Specifies whether the soft delete is enabled for this Azure Key Vault resource.')
-  param keyVaultEnableSoftDelete bool = true
-  
-  @description('Specifies whether purge protection is enabled for this Azure Key Vault resource.')
-  param keyVaultEnablePurgeProtection bool = true
-  
-  @description('Specifies whether enable the RBAC authorization for the Azure Key Vault resource.')
-  param keyVaultEnableRbacAuthorization bool = true
-  
-  @description('Specifies the soft delete retention in days.')
-  param keyVaultSoftDeleteRetentionInDays int = 7
+
+@description('Specifies whether to allow public network access for Key Vault.')
+@allowed([
+  'Disabled'
+  'Enabled'
+])
+param keyVaultPublicNetworkAccess string = 'Disabled'
+
+@description('Specifies the default action of allow or deny when no other rules match for the Azure Key Vault resource. Allowed values: Allow or Deny')
+@allowed([
+  'Allow'
+  'Deny'
+])
+param keyVaultNetworkAclsDefaultAction string = 'Allow'
+
+@description('Specifies whether the Azure Key Vault resource is enabled for deployments.')
+param keyVaultEnabledForDeployment bool = true
+
+@description('Specifies whether the Azure Key Vault resource is enabled for disk encryption.')
+param keyVaultEnabledForDiskEncryption bool = true
+
+@description('Specifies whether the Azure Key Vault resource is enabled for template deployment.')
+param keyVaultEnabledForTemplateDeployment bool = true
+
+@description('Specifies whether the soft delete is enabled for this Azure Key Vault resource.')
+param keyVaultEnableSoftDelete bool = true
+
+@description('Specifies whether purge protection is enabled for this Azure Key Vault resource.')
+param keyVaultEnablePurgeProtection bool = true
+
+@description('Specifies whether enable the RBAC authorization for the Azure Key Vault resource.')
+param keyVaultEnableRbacAuthorization bool = true
+
+@description('Specifies the soft delete retention in days.')
+param keyVaultSoftDeleteRetentionInDays int = 7
 
 @description('Specifies the resource tags.')
 param tags object = {
@@ -804,6 +813,26 @@ param grafanaPublicNetworkAccess string = 'Enabled'
 ])
 param grafanaZoneRedundancy string = 'Disabled'
 
+@description('Specifies whether to deploy Prometheus and Grafana to the AKS cluster using a Helm chart.')
+param deployPrometheusAndGrafanaViaHelm bool = true
+
+@description('Specifies whether to whether to deploy the Certificate Manager to the AKS cluster using a Helm chart.')
+param deployCertificateManagerViaHelm bool = true
+
+@description('Specifies the list of ingress classes for which a cert-manager cluster issuer should be created.')
+param ingressClassNames array = ['nginx', 'webapprouting.kubernetes.azure.com']
+
+@description('Specifies the list of the names for the cert-manager cluster issuers.')
+param clusterIssuerNames array = ['letsencrypt-nginx', 'letsencrypt-webapprouting']
+
+@description('Specifies whether and how to deploy the NGINX Ingress Controller to the AKS cluster using a Helm chart. Possible values are None, Internal, and External.')
+@allowed([
+  'None'
+  'Internal'
+  'External'
+])
+param deployNginxIngressControllerViaHelm string = 'Internal'
+
 @description('Specifies the email address for the cert-manager cluster issuer.')
 param email string = 'admin@contoso.com'
 
@@ -814,6 +843,23 @@ param deploymentScripName string = letterCaseType == 'UpperCamelCase'
 
 @description('Specifies the uri of the deployment script.')
 param deploymentScriptUri string
+
+@description('Specifies the Azure CLI module version.')
+param azCliVersion string = '2.61.0'
+
+@description('Specifies the maximum allowed script execution time specified in ISO 8601 format. Default value is P1D.')
+param timeout string = 'PT30M'
+
+@description('Specifies the clean up preference when the script execution gets in a terminal state. Default setting is Always.')
+@allowed([
+  'Always'
+  'OnExpiration'
+  'OnSuccess'
+])
+param cleanupPreference string = 'OnSuccess'
+
+@description('Specifies the interval for which the service retains the script resource after it reaches a terminal state. Resource will be deleted when this duration expires.')
+param retentionInterval string = 'P1D'
 
 @description('Specifies the name of an existing public DNS zone.')
 param dnsZoneName string
@@ -1002,6 +1048,7 @@ module aksCluster 'aksCluster.bicep' = {
     networkPluginMode: aksClusterNetworkPluginMode
     networkPolicy: aksClusterNetworkPolicy
     webAppRoutingEnabled: aksClusterWebAppRoutingEnabled
+    nginxDefaultIngressControllerType: aksClusterNginxDefaultIngressControllerType
     podCidr: aksClusterPodCidr
     serviceCidr: aksClusterServiceCidr
     dnsServiceIP: aksClusterDnsServiceIP
@@ -1176,9 +1223,18 @@ module deploymentScript 'deploymentScript.bicep' = {
       ? '${deploymentScripName}Identity'
       : '${deploymentScripName}-identity'
     primaryScriptUri: deploymentScriptUri
+    azCliVersion: azCliVersion
+    retentionInterval: retentionInterval
+    cleanupPreference: cleanupPreference
+    timeout: timeout
     clusterName: aksCluster.outputs.name
     resourceGroupName: resourceGroup().name
     subscriptionId: subscription().subscriptionId
+    deployPrometheusAndGrafanaViaHelm: deployPrometheusAndGrafanaViaHelm
+    deployCertificateManagerViaHelm: deployCertificateManagerViaHelm
+    ingressClassNames: ingressClassNames
+    clusterIssuerNames: clusterIssuerNames
+    deployNginxIngressControllerViaHelm: deployNginxIngressControllerViaHelm
     email: email
     location: location
     tags: tags
