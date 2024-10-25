@@ -99,7 +99,7 @@ When Application Gateway is configured with end-to-end TLS communication mode, i
 
 ### Solution
 
-In this solution, the [Azure Web Application Firewall (WAF)](https://learn.microsoft.com/en-us/azure/web-application-firewall/overview) ensures the security of the system by blocking malicious attacks. The [Azure Application Gateway](https://learn.microsoft.com/en-us/azure/application-gateway/overview) handles incoming calls from client applications and performs TLS termination. It also implements [end-to-end TLS]((https://learn.microsoft.com/en-us/azure/application-gateway/ssl-overview#end-to-end-tls-encryption)) by invoking the underlying AKS-hosted `yelb-ui` service using the HTTPS transport protocol via the internal load balancer and NGINX Ingress controller. The following diagram illustrates the architecture:
+In this solution, the [Azure Web Application Firewall (WAF)](https://learn.microsoft.com/en-us/azure/web-application-firewall/overview) ensures the security of the system by blocking malicious attacks. The [Azure Application Gateway](https://learn.microsoft.com/en-us/azure/application-gateway/overview) handles incoming calls from client applications and performs TLS termination. It also implements [end-to-end TLS](https://learn.microsoft.com/en-us/azure/application-gateway/ssl-overview#end-to-end-tls-encryption) by invoking the underlying AKS-hosted `yelb-ui` service using the HTTPS transport protocol via the internal load balancer and NGINX Ingress controller. The following diagram illustrates the architecture:
 
 ![Application Gateway WAFv2 with NGINX Ingress controller via HTTPS](../../images/application-gateway-aks-https.png)
 

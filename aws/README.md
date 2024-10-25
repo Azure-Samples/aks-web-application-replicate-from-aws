@@ -11,7 +11,7 @@ For more information, see [Protecting your Amazon EKS web apps with AWS WAF](htt
 You will need the following to complete the tutorial:
 
 - [AWS CLI **version 2**](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html)
-- [eksctl](https://eksctl.io/introduction/#installation)
+- [eksctl](https://eksctl.io/installation/)
 - [kubectl](https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html)
 - [Helm](https://helm.sh/docs/intro/install/)
 - [Git](https://git-scm.com/downloads)
