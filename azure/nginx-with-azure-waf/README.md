@@ -28,7 +28,7 @@ To enhance security, the [Yelb](https://github.com/mreferre/yelb/) application i
 - [Helm](https://helm.sh/docs/intro/install/) version 3.0.0 or later
 - [Visual Studio Code](https://code.visualstudio.com/) installed on one of the [supported platforms](https://code.visualstudio.com/docs/supporting/requirements#_platforms) along with the [Bicep extension](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-bicep).
 - An existing [Azure Key Vault](https://learn.microsoft.com/en-us/azure/key-vault/general/overview) resource with a valid TLS certificate for the Yelb web application.
-- An existing [Azure DNS Zone](https://learn.microsoft.com/en-us/azure/dns/dns-zones-records) for the name resolution of the [Azure Front Door custom domain](https://learn.microsoft.com/en-us/azure/frontdoor/front-door-custom-domain) via a [CNAME record](https://en.wikipedia.org/wiki/CNAME_record).
+- An existing [Azure DNS Zone](https://learn.microsoft.com/en-us/azure/dns/dns-zones-records) or equivalent DNS server for the name resolution of the [Yelb](https://github.com/mreferre/yelb/) application.
 
 ## Architecture
 
