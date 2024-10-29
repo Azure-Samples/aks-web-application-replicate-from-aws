@@ -1480,25 +1480,25 @@ You can increase security and threat protection of the solution byt using [Azure
 
 [Azure DDoS Protection][azure-ddos], combined with application design best practices, provides advanced mitigation against distributed denial of service (DDoS) attacks. It's automatically tuned to help protect your specific Azure resources in a virtual network. Azure DDoS Protection protects at layer 3 and layer 4 network layers, while [Azure Web Access Firewall (WAF)][azure-waf] provides protection at layer 7 for web applications. For more information, see [Application DDoS protection](/azure/web-application-firewall/shared/application-ddos-protection). You can use [Azure DDoS Network Protection][azure-ddos] to protect the virtual network hosting your [Azure Application Gateway][azure-ag] and [Azure Kubernetes Service (AKS)][aks] cluster. For more infomation, see [Tutorial: Protect your application gateway with Azure DDoS Network Protection][azure-ddos-ag].
 
-[Azure Firewall][azure-fw] is a cutting-edge, cloud-native network security service that offers best of breed threat protection for your Azure based cloud workloads. As a fully stateful firewall as a service, Azure Firewall is designed with built-in high availability and unlimited scalability within the cloud environment. This service encompasses comprehensive inspection of both east-west and north-south traffic. To gain a deeper understanding of east-west and north-south traffic, see [East-West and North-South Traffic](/azure/architecture/framework/security/design-network-flow#east-west-and-north-south-traffic). You can use [Azure Firewall][azure-fw] in combination with the [Azure Application Gateway][azure-ag] to increase the protection at both the network and application layers. For more information, see: 
+[Azure Firewall][azure-fw] is a cutting-edge, cloud-native network security service that offers best of breed threat protection for your Azure based cloud workloads. As a fully stateful firewall as a service, Azure Firewall is designed with built-in high availability and unlimited scalability within the cloud environment. This service encompasses comprehensive inspection of both east-west and north-south traffic. To gain a deeper understanding of east-west and north-south traffic, see [East-West and North-South Traffic](/azure/architecture/framework/security/design-network-flow#east-west-and-north-south-traffic). You can use [Azure Firewall][azure-fw] in combination with the [Azure Application Gateway][azure-ag] to increase the protection at both the network and application layers. For more information, see:
 
-- [Firewall and Application Gateway for virtual networks][azure-fw-ag-1] 
+- [Firewall and Application Gateway for virtual networks][azure-fw-ag-1]
 - [Zero-trust network for web applications with Azure Firewall and Application Gateway][azure-fw-ag-2]
 
-If you use the NGINX ingress controller or any other AKS hosted ingress controller in place of the Azure Application Gateway, you can use the [Azure Firewall][azure-fw] to inspect traffic to and from the [Azure Kubernetes Service (AKS)](/azure/aks) and protect the cluster from data exfiltration and other undesired network traffic. For more information, see: 
+If you use the NGINX ingress controller or any other AKS hosted ingress controller in place of the Azure Application Gateway, you can use the [Azure Firewall][azure-fw] to inspect traffic to and from the [Azure Kubernetes Service (AKS)](/azure/aks) and protect the cluster from data exfiltration and other undesired network traffic. For more information, see:
 
 - [Use Azure Firewall to protect Azure Kubernetes Service (AKS) clusters][azure-fw-aks-1]
 - [Use Azure Firewall to help protect an Azure Kubernetes Service (AKS) cluster][azure-fw-aks-2]
 
 <!-- LINKS -->
-[aks]: ./what-is-aks.md
-[azure-waf]: /azure/web-application-firewall/overview
-[azure-ag]: /azure/application-gateway/overview
-[azure-ddos]: /azure/ddos-protection/ddos-protection-overview
-[azure-fw]: /en-us/azure/firewall/overview
-[azure-ddos-ag]: /azure/application-gateway/tutorial-protect-application-gateway-ddos
-[azure-fw-ag-1]: /azure/architecture/example-scenario/gateway/application-gateway-before-azure-firewall
-[azure-fw-ag-2]: /azure/architecture/example-scenario/gateway/firewall-application-gateway
-[azure-fw-aks-1]: /azure/firewall/protect-azure-kubernetes-service
-[azure-fw-aks-2]: /azure/architecture/guide/aks/aks-firewall
-[azure-la]: /azure/azure-monitor/logs/log-analytics-workspace-overview
+[aks]: https://learn.microsoft.com/en-us/azure/aks/what-is-aks
+[azure-waf]: https://learn.microsoft.com/en-us/azure/web-application-firewall/overview
+[azure-ag]: https://learn.microsoft.com/en-us/azure/application-gateway/overview
+[azure-ddos]: https://learn.microsoft.com/en-us/azure/ddos-protection/ddos-protection-overview
+[azure-fw]: https://learn.microsoft.com/en-us/azure/firewall/overview
+[azure-ddos-ag]: https://learn.microsoft.com/en-us/azure/application-gateway/tutorial-protect-application-gateway-ddos
+[azure-fw-ag-1]: https://learn.microsoft.com/en-us/azure/architecture/example-scenario/gateway/application-gateway-before-azure-firewall
+[azure-fw-ag-2]: https://learn.microsoft.com/en-us/azure/architecture/example-scenario/gateway/firewall-application-gateway
+[azure-fw-aks-1]: https://learn.microsoft.com/en-us/azure/firewall/protect-azure-kubernetes-service
+[azure-fw-aks-2]: https://learn.microsoft.com/en-us/azure/architecture/guide/aks/aks-firewall
+[azure-la]: https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview
