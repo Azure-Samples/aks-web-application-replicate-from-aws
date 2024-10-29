@@ -1471,7 +1471,6 @@ Alternatively, you can use the following PowerShell cmdlet to delete the resourc
 
 ```azurepowershell
 Remove-AzResourceGroup -Name <resource-group-name>
-## CI/CD and GitOps Considerations
 ```
 
 ## Next steps
