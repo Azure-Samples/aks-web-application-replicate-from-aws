@@ -1,4 +1,4 @@
-# Yelb on AKS with Azure Application Gateway and Azure WAF
+# Tutorial: Yelb on AKS with Azure Application Gateway and Azure WAF
 
 In this solution, the [Yelb](https://github.com/mreferre/yelb/) application is deployed on an [Azure Kubernetes Service (AKS)](https://docs.microsoft.com/en-us/azure/aks/intro-kubernetes) cluster and exposed through an ingress controller like the [NGINX ingress controller](https://github.com/kubernetes/ingress-nginx). The ingress controller service is accessible via an [internal (or private) load balancer](https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-overview), which is used to balance traffic within the virtual network housing the AKS cluster. This load balancer frontend can also be accessed from an on-premises network in a hybrid scenario. To learn more about utilizing an internal load balancer to restrict access to your applications in Azure Kubernetes Service (AKS), refer to the guide [Use an internal load balancer with Azure Kubernetes Service (AKS)](https://learn.microsoft.com/en-us/azure/aks/internal-lb?tabs=set-service-annotations).
 
