@@ -1,4 +1,4 @@
-# Yelb on AKS with NGINX Ingress Controller and ModSecurity
+# Tutorial: Yelb on AKS with NGINX Ingress Controller and ModSecurity
 
 The following solution makes use of [NGINX ingress controller](https://docs.nginx.com/nginx-ingress-controller/intro/overview/) to expose the [Yelb](https://github.com/mreferre/yelb/) application and ModSecurity to block any malicious or suspicious traffic based on predefined OWASP or custom rules. [ModSecurity](https://github.com/SpiderLabs/ModSecurity) is an open-source web application firewall (WAF) that is compatible with popular web servers such as Apache, NGINX, and ISS. It provides protection from a wide range of attacks by using a powerful rule-definition language.
 

@@ -1,4 +1,4 @@
-# Yelb Architecture on AWS
+# Tutorial: Yelb Architecture on AWS
 
 This section contains a list of scripts that you can use to automate the deployment of the [Yelb](https://github.com/mreferre/yelb/) application on [AWS Elastic Kubernetes Service (EKS)](https://docs.aws.amazon.com/eks/latest/userguide/what-is-eks.html). This solution demonstrates how to implement a web application firewall  using AWS WAF to protect applications running on EKS. You will start by  creating an EKS cluster and deploying a sample workload. The sample  application that you will use for this walkthrough is a web-based  application that we’ll expose using an [Application Load Balancer](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html). You will then create a [Kubernetes ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) and associate an [AWS WAF web access control list (web ACL)](https://docs.aws.amazon.com/waf/latest/developerguide/web-acl.html) control list (web ACL) with an ALB in front of the ingress.
 
